@@ -63,6 +63,12 @@ function draw() {
     if(button.show)
       button.display();
   }
+
+  // 각자 자기 성에 맞는 파일 생성 후 푸시하기
+  // kim.js
+  // kwon.js
+  // lee.js
+  // kimJ.js
 }
 
 function keyPressed(){
