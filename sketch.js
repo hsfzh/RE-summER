@@ -102,7 +102,7 @@ function changeScene(newSceneNum){
 }
 function drawBackground(){
   // 배경 정리
-  background(255);
+  background(200);
   // 배경 이미지
   showImage(backgroundImage[sceneNum], 0, width/2, height/2);
 }
@@ -121,49 +121,4 @@ function initBackgroundImage(){
   for(let i=0; i<totalSceneNum; i++) backgroundImage.push(null);
   backgroundImage[scenes.INTRO] = images.introBackground;
   backgroundImage[scenes.MAP_SELECT] = images.map_selection;
-}
-function debugDraw(){
-  if(isDebugMode){
-    push();
-    strokeWeight(5);
-    let lineIndex = 0;
-    for(let x = 0; x<width; x+=20){
-      setLineColor(int(lineIndex / 10));
-      line(x, 0, x, height);
-      lineIndex += 1;
-    }
-    lineIndex = 0;
-    for(let y = 0; y<height; y+=20){
-      setLineColor(int(lineIndex / 10));
-      line(0, y, width, y);
-      lineIndex += 1;
-    }
-    pop();
-  }
-}
-function setLineColor(num){
-  switch(num){
-    case 0:
-      stroke(255, 0, 0);
-      break;
-    case 1:
-      stroke(255, 127, 0);
-      break;
-    case 2:
-      stroke(255, 255, 0);
-      break;
-    case 3:
-      stroke(0, 255, 0);
-      break;
-    case 4:
-      stroke(0, 0, 255);
-      break;
-    case 5:
-      stroke(75, 0, 130);
-      break;
-    default:
-    case 6:
-      stroke(148, 0, 211);
-      break;
-  }
 }
