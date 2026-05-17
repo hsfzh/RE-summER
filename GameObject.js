@@ -82,7 +82,6 @@ class Collider{
             
             let startY = -this.halfHeight + radius;
             let endY = this.halfHeight - radius;
-            console.log(`startY: ${startY}, endY: ${endY}`);
 
             if (circleNum === 1) {
                 this.circles.push({ r: radius, p: { x: 0, y: 0 }, actualP: { x: 0, y: 0} });
@@ -98,7 +97,6 @@ class Collider{
 
             let startX = -this.halfWidth + radius;
             let endX = this.halfWidth - radius;
-            console.log(`startX: ${startX}, endX: ${endX}`);
 
             if (circleNum === 1) {
                 this.circles.push({ r: radius, p: { x: 0, y: 0 }, actualP: { x: 0, y: 0} });

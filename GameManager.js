@@ -1,14 +1,38 @@
 class GameManager{
     constructor(){
-        this.currentState = gameState.START;
+        this.currentState = gameState.NONE;
+        this.introText = [
+            "다 왔어, 곧 할머니 댁이야.\n창문 열어봐, 이 냄새 좋지?",
+            "이제 도착했다.\n잘 지내다 와."
+        ];
+        this.textIndex = 0;
+        this.inputTimer = 0.5;
     }
     changeState(newState){
         this.currentState = newState;
+        this.inputTimer = 0.5;
+        if(this.currentState == gameState.MAP_SELECT){
+            for (let button of mapButtons){
+                button.changeShowState(true);
+            }
+            mapButton.changeShowState(false);
+        } else {
+            for (let button of mapButtons){
+                button.changeShowState(false);
+            }
+            if(this.currentState == gameState.PLAYING){
+                mapButton.changeShowState(true);
+            }
+        }
     }
     update(time){
+        if(this.inputTimer >= 0) this.inputTimer -= time;
         switch(this.currentState){
             case gameState.START:
                 this.updateStart(time);
+                break;
+            case gameState.MAP_SELECT:
+                this.updateMapUI(time);
                 break;
             case gameState.PLAYING:
                 this.updatePlaying(time);
@@ -22,7 +46,24 @@ class GameManager{
         }
     }
     updateStart(time){
-
+        push();
+        fill(255);
+        stroke(0);
+        rectMode(CENTER);
+        rect(width/2, height*0.8, 600, 140);
+        pop();
+        showText(this.introText[this.textIndex], 30, color(0), width/2, height*0.8);
+        if(this.checkInput()){
+            this.textIndex += 1;
+            if(this.textIndex >= this.introText.length){
+                this.changeState(gameState.MAP_SELECT);
+                changeScene(scenes.MAP_SELECT);
+                this.textIndex = 0;
+            }
+        }
+    }
+    updateMapUI(time){
+    
     }
     updatePlaying(time){
         for(let object of objects){
@@ -43,5 +84,12 @@ class GameManager{
     }
     updateEnd(time){
 
+    }
+    checkInput(){
+        if(this.inputTimer > 0) return false;
+        if(keyIsDown(32) || (mouseIsPressed && mouseButton == LEFT)){
+            this.inputTimer = 0.5;
+            return true;
+        }
     }
 }

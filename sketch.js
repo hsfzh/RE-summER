@@ -7,67 +7,70 @@ let objects = [];
 let buttons = [];
 let gameState = {
   START: 0,
-  PLAYING: 1,
-  EDITING: 2,
-  END: 3 
+  MAP_SELECT: 1,
+  PLAYING: 2,
+  EDITING: 3,
+  END: 4,
+  NONE: 5
 }
-let backgroundColor;
+let backgroundImage = [];
 let sceneNum;
-let scenes = { // 시냇가:1, 안방:2, 부엌:3, 마당:4, 빈씬:0, 총 5개
+let scenes = { // 빈씬:0, 시냇가:1, 안방:2, 부엌:3, 마당:4, 인트로:5, 맵선택씬:6, 편집씬:7
   EMPTY: 0,
   STREAM: 1,
   BEDROOM: 2,
   KITCHEN: 3,
-  OUTSIDE: 4
+  OUTSIDE: 4,
+  INTRO: 5,
+  MAP_SELECT: 6,
+  EDIT_SCENE: 7
 };
-let totalSceneNum = 5; 
+let totalSceneNum = 8; 
 // 객체들
+let startButton;
+let mapButton;
 let gameManager;
 let player;
-let outsideButton;
-let bedroomButton;
-let kitchenButton;
-let streamButton;
 let returnButton;
 let sceneObjects = [];
-// 이미지들
-let playerImage;
-let bedImage;
-let sinkImage;
-let benchImage;
+let mapButtons = [];
+// 이미지
+let images = {}; // 딕셔너리 형태 preload에서 images.player = loadImage 이렇게 새로운 변수 생성 없이 초기화
 
 function preload(){
-  playerImage = loadImage("Resources/Images/kirby.png");
-  bedImage = loadImage("Resources/Images/bed.png");
-  sinkImage = loadImage("Resources/Images/sink.png");
-  benchImage = loadImage("Resources/Images/bench.png");
+  images.player = loadImage("Resources/Images/kirby.png");
+  images.bed = loadImage("Resources/Images/bed.png");
+  images.sink = loadImage("Resources/Images/sink.png");
+  images.bench = loadImage("Resources/Images/bench.png");
+  images.introBackground = loadImage("Resources/Images/intro.png");
+  images.map_selection = loadImage("Resources/Images/map_selection.png");
 }
 
 function setup() {
   createCanvas(windowWidth, windowHeight);
   gameManager = new GameManager();
-  player = new Player(width/2, height/2, playerImage, 0.25, true, 1);
-  outsideButton = new OutsideButton(width/2 + 100, height/2, 100, 100);
-  bedroomButton = new BedroomButton(width/2 - 100, height/2 - 75, 100, 100);
-  kitchenButton = new KitchenButton(width/2 - 100, height/2 + 75, 100, 100);
-  streamButton = new StreamButton(width/2 - 200, height/2 + 75, 100, 100);
-  returnButton = new ReturnButton(100, 100, 100, 50);
-  backgroundColor = color(220);
+  startButton = new StartButton(width/2, height * 0.75, 200, 100);
+  mapButton = new MapButton(200, 40, 100, 50);
+  mapButton.changeShowState(false);
+  player = new Player(width/2, height/2, images.player, 0.25, true, 1);
+  initMapButtons();
+  initBackgroundImage();
   sceneNum = 0;
   for(let i=0; i<totalSceneNum; i++) sceneObjects.push([]);
   // 씬 오브젝트 배치
   // 시냇가 씬
-  sceneObjects[scenes.STREAM].push(new GameObject(1000, 200, benchImage));
+  sceneObjects[scenes.STREAM].push(new GameObject(1000, 200, images.bench));
   // 안방씬
-  sceneObjects[scenes.BEDROOM].push(new GameObject(200, 200, bedImage));
+  sceneObjects[scenes.BEDROOM].push(new GameObject(200, 200, images.bed));
   // 부엌 씬
-  sceneObjects[scenes.KITCHEN].push(new GameObject(400, 200, sinkImage));
+  sceneObjects[scenes.KITCHEN].push(new GameObject(400, 200, images.sink));
   // 마당 씬
-  sceneObjects[scenes.OUTSIDE].push(new GameObject(400, 200, sinkImage));
+  sceneObjects[scenes.OUTSIDE].push(new GameObject(400, 200, images.sink));
 }
 
 function draw() {
-  loadScene(sceneNum);
+  drawBackground(sceneNum);
+  debugDraw(); // 디버깅용
   gameManager.update(deltaTime/1000);
   for(let button of buttons){
     button.update();
@@ -82,7 +85,7 @@ function keyPressed(){
 
 function mousePressed(){
   for(let button of buttons){
-    if(button.ishovering){
+    if(button.ishovering && button.show){
       button.performAction();
     }
   }
@@ -96,20 +99,71 @@ function changeScene(newSceneNum){
     else
       for(let object of sceneObjects[i]) object.deactivate();
   }
-  if(gameManager.currentState == gameState.START){
-    outsideButton.show = true;
-    bedroomButton.show = true;
-    kitchenButton.show = true;
-    streamButton.show = true;
-  } else {
-    outsideButton.show = false;
-    bedroomButton.show = false;
-    kitchenButton.show = false;
-    streamButton.show = false;
+}
+function drawBackground(){
+  // 배경 정리
+  background(255);
+  // 배경 이미지
+  showImage(backgroundImage[sceneNum], 0, width/2, height/2);
+}
+function initMapButtons(){
+  let outsideButton = new OutsideButton(500, 400, 80, 80);
+  let bedroomButton = new BedroomButton(380, 220, 80, 80);
+  let kitchenButton = new KitchenButton(580, 220, 80, 80);
+  let streamButton = new StreamButton(1050, 290, 80, 80);
+  mapButtons.push(streamButton);
+  mapButtons.push(bedroomButton);
+  mapButtons.push(kitchenButton);
+  mapButtons.push(outsideButton);
+  for(let button of mapButtons) button.changeShowState(false);
+}
+function initBackgroundImage(){
+  for(let i=0; i<totalSceneNum; i++) backgroundImage.push(null);
+  backgroundImage[scenes.INTRO] = images.introBackground;
+  backgroundImage[scenes.MAP_SELECT] = images.map_selection;
+}
+function debugDraw(){
+  if(isDebugMode){
+    push();
+    strokeWeight(5);
+    let lineIndex = 0;
+    for(let x = 0; x<width; x+=20){
+      setLineColor(int(lineIndex / 10));
+      line(x, 0, x, height);
+      lineIndex += 1;
+    }
+    lineIndex = 0;
+    for(let y = 0; y<height; y+=20){
+      setLineColor(int(lineIndex / 10));
+      line(0, y, width, y);
+      lineIndex += 1;
+    }
+    pop();
   }
 }
-function loadScene(){
-  // 배경 이미지
-  //showImage(backgroundImage[sceneNum]);
-  background(backgroundColor);
+function setLineColor(num){
+  switch(num){
+    case 0:
+      stroke(255, 0, 0);
+      break;
+    case 1:
+      stroke(255, 127, 0);
+      break;
+    case 2:
+      stroke(255, 255, 0);
+      break;
+    case 3:
+      stroke(0, 255, 0);
+      break;
+    case 4:
+      stroke(0, 0, 255);
+      break;
+    case 5:
+      stroke(75, 0, 130);
+      break;
+    default:
+    case 6:
+      stroke(148, 0, 211);
+      break;
+  }
 }
