@@ -10,6 +10,9 @@ class Button{
         this.show = true;
         buttons.push(this);
     }
+    changeShowState(state){
+        this.show = state;
+    }
     update(time){
         if(mouseX < this.x+this.halfsizeX && mouseX > this.x-this.halfsizeX &&
             mouseY < this.y+this.halfsizeY && mouseY > this.y-this.halfsizeY){
@@ -26,10 +29,11 @@ class Button{
     }
 }
 
-class OutsideButton extends Button{
+class StartButton extends Button{
     performAction(){
-        gameManager.changeState(gameState.PLAYING);
-        changeScene(1);
+        gameManager.changeState(gameState.START);
+        changeScene(scenes.INTRO);
+        this.changeShowState(false);
     }
     display(){
         push();
@@ -37,6 +41,23 @@ class OutsideButton extends Button{
         rectMode(CENTER);
         rect(0, 0, this.sizeX, this.sizeY);
         textAlign(CENTER, CENTER);
+        fill(0);
+        text("게임 시작", 0, 0);
+        pop();
+    }
+}
+class OutsideButton extends Button{
+    performAction(){
+        gameManager.changeState(gameState.PLAYING);
+        changeScene(scenes.OUTSIDE);
+    }
+    display(){
+        push();
+        translate(this.x, this.y);
+        rectMode(CENTER);
+        rect(0, 0, this.sizeX, this.sizeY);
+        textAlign(CENTER, CENTER);
+        fill(0);
         text("야외", 0, 0);
         pop();
     }
@@ -44,7 +65,7 @@ class OutsideButton extends Button{
 class BedroomButton extends Button{
     performAction(){
         gameManager.changeState(gameState.PLAYING);
-        changeScene(2);
+        changeScene(scenes.BEDROOM);
     }
     display(){
         push();
@@ -52,6 +73,7 @@ class BedroomButton extends Button{
         rectMode(CENTER);
         rect(0, 0, this.sizeX, this.sizeY);
         textAlign(CENTER, CENTER);
+        fill(0);
         text("안방", 0, 0);
         pop();
     }
@@ -59,7 +81,7 @@ class BedroomButton extends Button{
 class KitchenButton extends Button{
     performAction(){
         gameManager.changeState(gameState.PLAYING);
-        changeScene(3);
+        changeScene(scenes.KITCHEN);
     }
     display(){
         push();
@@ -67,14 +89,15 @@ class KitchenButton extends Button{
         rectMode(CENTER);
         rect(0, 0, this.sizeX, this.sizeY);
         textAlign(CENTER, CENTER);
+        fill(0);
         text("부엌", 0, 0);
         pop();
     }
 }
-class ReturnButton extends Button{
+class StreamButton extends Button{
     performAction(){
-        gameManager.changeState(gameState.START);
-        changeScene(0);
+        gameManager.changeState(gameState.PLAYING);
+        changeScene(scenes.STREAM);
     }
     display(){
         push();
@@ -82,18 +105,36 @@ class ReturnButton extends Button{
         rectMode(CENTER);
         rect(0, 0, this.sizeX, this.sizeY);
         textAlign(CENTER, CENTER);
-        text("돌아가기", 0, 0);
+        fill(0);
+        text("시냇가", 0, 0);
+        pop();
+    }
+}
+class MapButton extends Button{
+    performAction(){
+        gameManager.changeState(gameState.MAP_SELECT);
+        changeScene(scenes.MAP_SELECT);
+        this.changeShowState(false);
+    }
+    display(){
+        push();
+        translate(this.x, this.y);
+        rectMode(CENTER);
+        rect(0, 0, this.sizeX, this.sizeY);
+        textAlign(CENTER, CENTER);
+        fill(0);
+        text("지도 보기", 0, 0);
         pop();
     }
 }
 
-function disableButtons(){
+function disableAllButtons(){
     for(let button of buttons){
-        button.show = false;
+        button.changeShowState(false);
     }
 }
-function activateButtons(){
+function activateAllButtons(){
     for(let button of buttons){
-        button.show = true;
+        button.changeShowState(true);
     }
 }
