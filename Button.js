@@ -29,7 +29,7 @@ class Button{
 class OutsideButton extends Button{
     performAction(){
         gameManager.changeState(gameState.PLAYING);
-        changeScene(1);
+        changeScene(scenes.OUTSIDE);
     }
     display(){
         push();
@@ -37,6 +37,7 @@ class OutsideButton extends Button{
         rectMode(CENTER);
         rect(0, 0, this.sizeX, this.sizeY);
         textAlign(CENTER, CENTER);
+        fill(0);
         text("야외", 0, 0);
         pop();
     }
@@ -44,7 +45,7 @@ class OutsideButton extends Button{
 class BedroomButton extends Button{
     performAction(){
         gameManager.changeState(gameState.PLAYING);
-        changeScene(2);
+        changeScene(scenes.BEDROOM);
     }
     display(){
         push();
@@ -52,6 +53,7 @@ class BedroomButton extends Button{
         rectMode(CENTER);
         rect(0, 0, this.sizeX, this.sizeY);
         textAlign(CENTER, CENTER);
+        fill(0);
         text("안방", 0, 0);
         pop();
     }
@@ -59,7 +61,7 @@ class BedroomButton extends Button{
 class KitchenButton extends Button{
     performAction(){
         gameManager.changeState(gameState.PLAYING);
-        changeScene(3);
+        changeScene(scenes.KITCHEN);
     }
     display(){
         push();
@@ -67,7 +69,24 @@ class KitchenButton extends Button{
         rectMode(CENTER);
         rect(0, 0, this.sizeX, this.sizeY);
         textAlign(CENTER, CENTER);
+        fill(0);
         text("부엌", 0, 0);
+        pop();
+    }
+}
+class StreamButton extends Button{
+    performAction(){
+        gameManager.changeState(gameState.PLAYING);
+        changeScene(scenes.STREAM);
+    }
+    display(){
+        push();
+        translate(this.x, this.y);
+        rectMode(CENTER);
+        rect(0, 0, this.sizeX, this.sizeY);
+        textAlign(CENTER, CENTER);
+        fill(0);
+        text("시냇가", 0, 0);
         pop();
     }
 }
@@ -82,6 +101,7 @@ class ReturnButton extends Button{
         rectMode(CENTER);
         rect(0, 0, this.sizeX, this.sizeY);
         textAlign(CENTER, CENTER);
+        fill(0);
         text("돌아가기", 0, 0);
         pop();
     }

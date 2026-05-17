@@ -13,13 +13,21 @@ let gameState = {
 }
 let backgroundColor;
 let sceneNum;
-let totalSceneNum = 4; // 밖:1, 안방:2, 부억:3, 빈씬:0, 총 4개
+let scenes = { // 시냇가:1, 안방:2, 부엌:3, 마당:4, 빈씬:0, 총 5개
+  EMPTY: 0,
+  STREAM: 1,
+  BEDROOM: 2,
+  KITCHEN: 3,
+  OUTSIDE: 4
+};
+let totalSceneNum = 5; 
 // 객체들
 let gameManager;
 let player;
 let outsideButton;
 let bedroomButton;
 let kitchenButton;
+let streamButton;
 let returnButton;
 let sceneObjects = [];
 // 이미지들
@@ -42,17 +50,20 @@ function setup() {
   outsideButton = new OutsideButton(width/2 + 100, height/2, 100, 100);
   bedroomButton = new BedroomButton(width/2 - 100, height/2 - 75, 100, 100);
   kitchenButton = new KitchenButton(width/2 - 100, height/2 + 75, 100, 100);
+  streamButton = new StreamButton(width/2 - 200, height/2 + 75, 100, 100);
   returnButton = new ReturnButton(100, 100, 100, 50);
   backgroundColor = color(220);
   sceneNum = 0;
   for(let i=0; i<totalSceneNum; i++) sceneObjects.push([]);
   // 씬 오브젝트 배치
-  // 밖 1번 씬
-  sceneObjects[1].push(new GameObject(1000, 200, benchImage));
-  // 안방 2번 씬
-  sceneObjects[2].push(new GameObject(200, 200, bedImage));
-  // 부엌 3번 씬
-  sceneObjects[3].push(new GameObject(400, 200, sinkImage));
+  // 시냇가 씬
+  sceneObjects[scenes.STREAM].push(new GameObject(1000, 200, benchImage));
+  // 안방씬
+  sceneObjects[scenes.BEDROOM].push(new GameObject(200, 200, bedImage));
+  // 부엌 씬
+  sceneObjects[scenes.KITCHEN].push(new GameObject(400, 200, sinkImage));
+  // 마당 씬
+  sceneObjects[scenes.OUTSIDE].push(new GameObject(400, 200, sinkImage));
 }
 
 function draw() {
@@ -89,10 +100,12 @@ function changeScene(newSceneNum){
     outsideButton.show = true;
     bedroomButton.show = true;
     kitchenButton.show = true;
+    streamButton.show = true;
   } else {
     outsideButton.show = false;
     bedroomButton.show = false;
     kitchenButton.show = false;
+    streamButton.show = false;
   }
 }
 function loadScene(){

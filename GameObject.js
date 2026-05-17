@@ -50,9 +50,11 @@ class GameObject{
     // 충돌 판정 범위 시각화 코드 (디버깅용)
     if(this.collidable && isDebugMode){
         for(let colliderCircle of this.collider.circles){
+            push();
             fill(0, 255, 0, 100);
             stroke(0);
             circle(colliderCircle.actualP.x, colliderCircle.actualP.y, 2*colliderCircle.r);
+            pop();
         }
     }
   }
