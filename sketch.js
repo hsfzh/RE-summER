@@ -6,16 +6,16 @@ let frontObjects = [];
 let objects = [];
 let buttons = [];
 let gameState = {
-  START: 0,
-  MAP_SELECT: 1,
-  PLAYING: 2,
-  EDITING: 3,
-  END: 4,
-  NONE: 5
+  INTRO: 0, //게임 인트로 차타고 가는 시작 씬 재생중 상태
+  MAP_SELECT: 1, //맵 선택 상태
+  PLAYING: 2, //게임 진행중 상태
+  EDITING: 3, //게임 후반부 소리 편집 상태
+  END: 4, //게임 엔딩 씬 재생중 상태
+  NONE: 5 //게임 시작전 상태
 }
 let backgroundImage = [];
 let sceneNum;
-let scenes = { // 빈씬:0, 시냇가:1, 안방:2, 부엌:3, 마당:4, 인트로:5, 맵선택씬:6, 편집씬:7
+let scenes = { // 빈씬:0, 시냇가:1, 안방:2, 부엌:3, 마당:4, 인트로:5, 맵선택씬:6, 편집씬:7, 엔딩씬:8
   EMPTY: 0,
   STREAM: 1,
   BEDROOM: 2,
@@ -23,9 +23,10 @@ let scenes = { // 빈씬:0, 시냇가:1, 안방:2, 부엌:3, 마당:4, 인트로
   OUTSIDE: 4,
   INTRO: 5,
   MAP_SELECT: 6,
-  EDIT_SCENE: 7
+  EDIT_SCENE: 7,
+  EDNING: 8
 };
-let totalSceneNum = 8; 
+let totalSceneNum = 9; 
 // 객체들
 let startButton;
 let mapButton;
@@ -48,6 +49,7 @@ function preload(){
 
 function setup() {
   createCanvas(1280, 720);
+  initDebugButtons();
   gameManager = new GameManager();
   startButton = new StartButton(width/2, height * 0.75, 200, 100);
   mapButton = new MapButton(0.16*width, 0.06*height, 100, 50);
@@ -80,7 +82,12 @@ function draw() {
 }
 
 function keyPressed(){
-  if(keyCode == 84) isDebugMode = !isDebugMode;
+  if(keyCode == 84){
+    isDebugMode = !isDebugMode;
+    for(let button of debugButtons){
+      button.changeShowState(isDebugMode);
+    }
+  }
 }
 
 function mousePressed(){

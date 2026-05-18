@@ -25,11 +25,13 @@ class GameManager{
                 mapButton.changeShowState(true);
             }
         }
+        if(this.currentState == gameState.NONE) startButton.changeShowState(true);
+        else startButton.changeShowState(false);
     }
     update(time){
         if(this.inputTimer >= 0) this.inputTimer -= time;
         switch(this.currentState){
-            case gameState.START:
+            case gameState.INTRO:
                 this.updateStart(time);
                 break;
             case gameState.MAP_SELECT:

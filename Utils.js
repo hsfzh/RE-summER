@@ -24,45 +24,32 @@ function showText(txt, fontSize, textColor, x, y){
 function debugDraw(){
   if(isDebugMode){
     push();
-    strokeWeight(5);
+    strokeWeight(1);
+    fill(0,100);
     let lineIndex = 0;
     for(let x = 0; x<width; x+=20){
-      setLineColor(int(lineIndex / 10));
       line(x, 0, x, height);
       lineIndex += 1;
     }
     lineIndex = 0;
     for(let y = 0; y<height; y+=20){
-      setLineColor(int(lineIndex / 10));
       line(0, y, width, y);
       lineIndex += 1;
     }
     pop();
   }
 }
-function setLineColor(num){
-  switch(num){
-    case 0:
-      stroke(255, 0, 0);
-      break;
-    case 1:
-      stroke(255, 127, 0);
-      break;
-    case 2:
-      stroke(255, 255, 0);
-      break;
-    case 3:
-      stroke(0, 255, 0);
-      break;
-    case 4:
-      stroke(0, 0, 255);
-      break;
-    case 5:
-      stroke(75, 0, 130);
-      break;
-    default:
-    case 6:
-      stroke(148, 0, 211);
-      break;
+let debugButtons = [];
+function initDebugButtons(){
+  let goToStartButton = new ToStartButton(width*0.35, height*0.1, 100, 50);
+  let goToIntroButton = new ToIntroButton(width*0.45, height*0.1, 100, 50);
+  let goToEditButton = new ToEditButton(width*0.55, height*0.1, 100, 50);
+  let goToEndingButton = new ToEndingButton(width*0.65, height*0.1, 100, 50);
+  debugButtons.push(goToStartButton);
+  debugButtons.push(goToIntroButton);
+  debugButtons.push(goToEditButton);
+  debugButtons.push(goToEndingButton);
+  for(let button of debugButtons){
+    button.changeShowState(false);
   }
 }

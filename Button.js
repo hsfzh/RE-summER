@@ -31,7 +31,7 @@ class Button{
 
 class StartButton extends Button{
     performAction(){
-        gameManager.changeState(gameState.START);
+        gameManager.changeState(gameState.INTRO);
         changeScene(scenes.INTRO);
         this.changeShowState(false);
     }
@@ -136,5 +136,70 @@ function disableAllButtons(){
 function activateAllButtons(){
     for(let button of buttons){
         button.changeShowState(true);
+    }
+}
+
+class ToStartButton extends Button{
+  performAction(){
+        gameManager.changeState(gameState.NONE);
+        changeScene(scenes.EMPTY);
+    }
+    display(){
+        push();
+        translate(this.x, this.y);
+        rectMode(CENTER);
+        rect(0, 0, this.sizeX, this.sizeY);
+        textAlign(CENTER, CENTER);
+        fill(0);
+        text("시작 씬으로", 0, 0);
+        pop();
+    }
+}
+class ToIntroButton extends Button{
+  performAction(){
+        gameManager.changeState(gameState.INTRO);
+        changeScene(scenes.INTRO);
+    }
+    display(){
+        push();
+        translate(this.x, this.y);
+        rectMode(CENTER);
+        rect(0, 0, this.sizeX, this.sizeY);
+        textAlign(CENTER, CENTER);
+        fill(0);
+        text("인트로 씬으로", 0, 0);
+        pop();
+    }
+}
+class ToEditButton extends Button{
+  performAction(){
+        gameManager.changeState(gameState.EDITING);
+        changeScene(scenes.EDIT_SCENE);
+    }
+    display(){
+        push();
+        translate(this.x, this.y);
+        rectMode(CENTER);
+        rect(0, 0, this.sizeX, this.sizeY);
+        textAlign(CENTER, CENTER);
+        fill(0);
+        text("편집 씬으로", 0, 0);
+        pop();
+    }
+}
+class ToEndingButton extends Button{
+  performAction(){
+        gameManager.changeState(gameState.END);
+        changeScene(scenes.ENDING);
+    }
+    display(){
+        push();
+        translate(this.x, this.y);
+        rectMode(CENTER);
+        rect(0, 0, this.sizeX, this.sizeY);
+        textAlign(CENTER, CENTER);
+        fill(0);
+        text("엔딩 씬으로", 0, 0);
+        pop();
     }
 }
