@@ -6,7 +6,8 @@ class GameManager{
             "이제 도착했다.\n잘 지내다 와."
         ];
         this.textIndex = 0;
-        this.inputTimer = 0.5;
+        this.inputTimer = 0.3;
+        this.inputInterval = 0.3;
     }
     changeState(newState){
         this.currentState = newState;
@@ -50,9 +51,9 @@ class GameManager{
         fill(255);
         stroke(0);
         rectMode(CENTER);
-        rect(width/2, height*0.8, 600, 140);
+        rect(width/2, height*0.825, 600, 140);
         pop();
-        showText(this.introText[this.textIndex], 30, color(0), width/2, height*0.8);
+        showText(this.introText[this.textIndex], 30, color(0), width/2, height*0.825);
         if(this.checkInput()){
             this.textIndex += 1;
             if(this.textIndex >= this.introText.length){
@@ -88,7 +89,7 @@ class GameManager{
     checkInput(){
         if(this.inputTimer > 0) return false;
         if(keyIsDown(32) || (mouseIsPressed && mouseButton == LEFT)){
-            this.inputTimer = 0.5;
+            this.inputTimer = this.inputInterval;
             return true;
         }
     }

@@ -32,7 +32,7 @@ let mapButton;
 let gameManager;
 let player;
 let returnButton;
-let sceneObjects = [];
+let sceneObjects = []; //각 씬에서만 사용하는 오브젝트는 따로 변수 선언 없이 setup에서 생성 및 배열에 추가
 let mapButtons = [];
 // 이미지
 let images = {}; // 딕셔너리 형태 preload에서 images.player = loadImage 이렇게 새로운 변수 생성 없이 초기화
@@ -47,10 +47,10 @@ function preload(){
 }
 
 function setup() {
-  createCanvas(windowWidth, windowHeight);
+  createCanvas(1280, 720);
   gameManager = new GameManager();
   startButton = new StartButton(width/2, height * 0.75, 200, 100);
-  mapButton = new MapButton(200, 40, 100, 50);
+  mapButton = new MapButton(0.16*width, 0.06*height, 100, 50);
   mapButton.changeShowState(false);
   player = new Player(width/2, height/2, images.player, 0.25, true, 1);
   initMapButtons();
@@ -107,10 +107,10 @@ function drawBackground(){
   showImage(backgroundImage[sceneNum], 0, width/2, height/2);
 }
 function initMapButtons(){
-  let outsideButton = new OutsideButton(500, 400, 80, 80);
-  let bedroomButton = new BedroomButton(380, 220, 80, 80);
-  let kitchenButton = new KitchenButton(580, 220, 80, 80);
-  let streamButton = new StreamButton(1050, 290, 80, 80);
+  let outsideButton = new OutsideButton(width*0.34, height*0.52, 80, 80);
+  let bedroomButton = new BedroomButton(width*0.255, height*0.29, 80, 80);
+  let kitchenButton = new KitchenButton(width*0.4, height*0.28, 80, 80);
+  let streamButton = new StreamButton(width*0.74, height*0.38, 80, 80);
   mapButtons.push(streamButton);
   mapButtons.push(bedroomButton);
   mapButtons.push(kitchenButton);
