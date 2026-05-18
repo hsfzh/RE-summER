@@ -3,7 +3,7 @@ class GameManager{
         this.currentState = gameState.NONE;
         this.introText = [
             "다 왔어, 곧 할머니 댁이야.\n창문 열어봐, 이 냄새 좋지?",
-            "이제 도착했다.\n잘 지내다 와."
+            "창문 열어봐, 이 냄새 좋지?"
         ];
         this.textIndex = 0;
         this.inputTimer = 0.3;
@@ -37,14 +37,21 @@ class GameManager{
             case gameState.MAP_SELECT:
                 this.updateMapUI(time);
                 break;
-            case gameState.PLAYING:
-                this.updatePlaying(time);
+            case gameState.CALLING:
+                break;
+            case gameState.RETURN_CAR:
                 break;
             case gameState.EDITING:
                 this.updateEditing(time);
                 break;
             case gameState.END:
                 this.updateEnd(time);
+                break;
+            case gameState.NONE:
+                break;
+            default:
+            case gameState.PLAYING:
+                this.updatePlaying(time);
                 break;
         }
     }
@@ -90,7 +97,7 @@ class GameManager{
     }
     checkInput(){
         if(this.inputTimer > 0) return false;
-        if(keyIsDown(32) || (mouseIsPressed && mouseButton == LEFT)){
+        if(keyIsDown(69) || (mouseIsPressed && mouseButton == LEFT)){
             this.inputTimer = this.inputInterval;
             return true;
         }

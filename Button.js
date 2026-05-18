@@ -49,6 +49,7 @@ class StartButton extends Button{
 class OutsideButton extends Button{
     performAction(){
         gameManager.changeState(gameState.PLAYING);
+        player.visitedMap.OUTSIDE = true;
         changeScene(scenes.OUTSIDE);
     }
     display(){
@@ -65,6 +66,7 @@ class OutsideButton extends Button{
 class BedroomButton extends Button{
     performAction(){
         gameManager.changeState(gameState.PLAYING);
+        player.visitedMap.BEDROOM = true;
         changeScene(scenes.BEDROOM);
     }
     display(){
@@ -81,6 +83,7 @@ class BedroomButton extends Button{
 class KitchenButton extends Button{
     performAction(){
         gameManager.changeState(gameState.PLAYING);
+        player.visitedMap.KITCHEN = true;
         changeScene(scenes.KITCHEN);
     }
     display(){
@@ -97,6 +100,7 @@ class KitchenButton extends Button{
 class StreamButton extends Button{
     performAction(){
         gameManager.changeState(gameState.PLAYING);
+        player.visitedMap.STREAM = true;
         changeScene(scenes.STREAM);
     }
     display(){
@@ -127,6 +131,31 @@ class MapButton extends Button{
         pop();
     }
 }
+class CallButton extends Button{
+    constructor(_x, _y, _sizeX, _sizeY){
+        super(_x, _y, _sizeX, _sizeY);
+        this.pressed = false;
+    }
+    performAction(){
+        gameManager.changeState(gameState.CALLING);
+        changeScene(scenes.CALLING);
+        this.changeShowState(false);
+    }
+    display(){
+        push();
+        translate(this.x, this.y);
+        rectMode(CENTER);
+        rect(0, 0, this.sizeX, this.sizeY);
+        textAlign(CENTER, CENTER);
+        fill(0);
+        text("엄마에게 전화하기", 0, 0);
+        pop();
+    }
+    changeShowState(state){
+        if(this.pressed) this.show = false;
+        else super.changeShowState(state);
+    }
+}
 
 function disableAllButtons(){
     for(let button of buttons){
@@ -139,6 +168,7 @@ function activateAllButtons(){
     }
 }
 
+//#region 디버깅 버튼
 class ToStartButton extends Button{
   performAction(){
         gameManager.changeState(gameState.NONE);
@@ -168,6 +198,22 @@ class ToIntroButton extends Button{
         textAlign(CENTER, CENTER);
         fill(0);
         text("인트로 씬으로", 0, 0);
+        pop();
+    }
+}
+class ToReturnButton extends Button{
+  performAction(){
+        gameManager.changeState(gameState.RETURN_CAR);
+        changeScene(scenes.RETURN_CAR);
+    }
+    display(){
+        push();
+        translate(this.x, this.y);
+        rectMode(CENTER);
+        rect(0, 0, this.sizeX, this.sizeY);
+        textAlign(CENTER, CENTER);
+        fill(0);
+        text("귀가 씬으로", 0, 0);
         pop();
     }
 }
@@ -203,3 +249,4 @@ class ToEndingButton extends Button{
         pop();
     }
 }
+//#endregion

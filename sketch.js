@@ -9,13 +9,15 @@ let gameState = {
   INTRO: 0, //게임 인트로 차타고 가는 시작 씬 재생중 상태
   MAP_SELECT: 1, //맵 선택 상태
   PLAYING: 2, //게임 진행중 상태
-  EDITING: 3, //게임 후반부 소리 편집 상태
-  END: 4, //게임 엔딩 씬 재생중 상태
-  NONE: 5 //게임 시작전 상태
+  CALLING: 3, //엄마와 전화 중 상태
+  RETURN_CAR: 4, //차타고 귀가하는 씬
+  EDITING: 5, //게임 후반부 소리 편집 상태
+  END: 6, //게임 엔딩 씬 재생중 상태
+  NONE: 7 //게임 시작전 상태
 }
 let backgroundImage = [];
 let sceneNum;
-let scenes = { // 빈씬:0, 시냇가:1, 안방:2, 부엌:3, 마당:4, 인트로:5, 맵선택씬:6, 편집씬:7, 엔딩씬:8
+let scenes = { // 빈씬:0, 시냇가:1, 안방:2, 부엌:3, 마당:4, 인트로:5, 맵선택씬:6, 전화씬:7, 귀가씬:8, 편집씬:9, 엔딩씬:10
   EMPTY: 0,
   STREAM: 1,
   BEDROOM: 2,
@@ -23,16 +25,18 @@ let scenes = { // 빈씬:0, 시냇가:1, 안방:2, 부엌:3, 마당:4, 인트로
   OUTSIDE: 4,
   INTRO: 5,
   MAP_SELECT: 6,
-  EDIT_SCENE: 7,
-  EDNING: 8
+  CALLING: 7,
+  RETURN_CAR: 8,
+  EDIT_SCENE: 9,
+  EDNING: 10
 };
-let totalSceneNum = 9; 
+let totalSceneNum = 11; 
 // 객체들
 let startButton;
 let mapButton;
 let gameManager;
 let player;
-let returnButton;
+let callButton;
 let sceneObjects = []; //각 씬에서만 사용하는 오브젝트는 따로 변수 선언 없이 setup에서 생성 및 배열에 추가
 let mapButtons = [];
 // 이미지
@@ -54,6 +58,8 @@ function setup() {
   startButton = new StartButton(width/2, height * 0.75, 200, 100);
   mapButton = new MapButton(0.16*width, 0.06*height, 100, 50);
   mapButton.changeShowState(false);
+  callButton = new CallButton(0.84*width, 0.06*height, 100, 50);
+  callButton.changeShowState(false);
   player = new Player(width/2, height/2, images.player, 0.25, true, 1);
   initMapButtons();
   initBackgroundImage();
@@ -105,6 +111,10 @@ function changeScene(newSceneNum){
       for(let object of sceneObjects[i]) object.activate();
     else
       for(let object of sceneObjects[i]) object.deactivate();
+  }
+  if(gameManager.currentState == gameState.MAP_SELECT){
+    console.log(player.visitedMap);
+    callButton.changeShowState(player.hasVisitedAllMaps());
   }
 }
 function drawBackground(){
