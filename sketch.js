@@ -49,6 +49,7 @@ function preload(){
   images.bench = loadImage("Resources/Images/bench.png");
   images.introBackground = loadImage("Resources/Images/intro.png");
   images.map_selection = loadImage("Resources/Images/map_selection.png");
+  images.calling = loadImage("Resources/Images/calling.png");
 }
 
 function setup() {
@@ -138,4 +139,5 @@ function initBackgroundImage(){
   for(let i=0; i<totalSceneNum; i++) backgroundImage.push(null);
   backgroundImage[scenes.INTRO] = images.introBackground;
   backgroundImage[scenes.MAP_SELECT] = images.map_selection;
+  backgroundImage[scenes.CALLING] = images.calling;
 }

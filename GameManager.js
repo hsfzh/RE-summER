@@ -5,13 +5,17 @@ class GameManager{
             "다 왔어, 곧 할머니 댁이야.\n창문 열어봐, 이 냄새 좋지?",
             "창문 열어봐, 이 냄새 좋지?"
         ];
+        this.callingText = [
+            "엄마, 이제 데리러 와",
+            "그래, 지금 갈게. 잠깐만 기다려."
+        ];
         this.textIndex = 0;
         this.inputTimer = 0.3;
         this.inputInterval = 0.3;
     }
     changeState(newState){
         this.currentState = newState;
-        this.inputTimer = 0.5;
+        this.inputTimer = this.inputInterval * 0.5;
         if(this.currentState == gameState.MAP_SELECT){
             for (let button of mapButtons){
                 button.changeShowState(true);
@@ -38,6 +42,7 @@ class GameManager{
                 this.updateMapUI(time);
                 break;
             case gameState.CALLING:
+                this.updateCalling(time);
                 break;
             case gameState.RETURN_CAR:
                 break;
@@ -74,6 +79,21 @@ class GameManager{
     }
     updateMapUI(time){
     
+    }
+    updateCalling(time){
+        push();
+        fill(255);
+        stroke(0);
+        pop();
+        //showText(this.introText[this.textIndex], 30, color(0), width/2, height*0.825);
+        if(this.checkInput()){
+            this.textIndex += 1;
+            if(this.textIndex >= this.callingText.length){
+                this.changeState(gameState.RETURN_CAR);
+                changeScene(scenes.RETURN_CAR);
+                this.textIndex = 0;
+            }
+        }
     }
     updatePlaying(time){
         for(let object of objects){
