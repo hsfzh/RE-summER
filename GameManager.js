@@ -9,9 +9,13 @@ class GameManager{
             "엄마, 이제 데리러 와",
             "그래, 지금 갈게. 잠깐만 기다려."
         ];
+        this.returnText = [
+            "…그 여름이 얼마나 오래된 일인지."
+        ]
         this.textIndex = 0;
         this.inputTimer = 0.3;
         this.inputInterval = 0.3;
+        this.returnSceneTimer = 0;
     }
     changeState(newState){
         this.currentState = newState;
@@ -29,6 +33,7 @@ class GameManager{
                 mapButton.changeShowState(true);
             }
         }
+        if(this.currentState == gameState.RETURN_CAR) this.returnSceneTimer = 0;
         if(this.currentState == gameState.NONE) startButton.changeShowState(true);
         else startButton.changeShowState(false);
     }
@@ -45,6 +50,7 @@ class GameManager{
                 this.updateCalling(time);
                 break;
             case gameState.RETURN_CAR:
+                this.updateReturnScene(time);
                 break;
             case gameState.EDITING:
                 this.updateEditing(time);
@@ -92,6 +98,25 @@ class GameManager{
                 this.changeState(gameState.RETURN_CAR);
                 changeScene(scenes.RETURN_CAR);
                 this.textIndex = 0;
+            }
+        }
+    }
+    updateReturnScene(time){
+        this.returnSceneTimer += time * 0.5;
+        showImage(images.return[int(this.returnSceneTimer)], 0, width/2, height/2);
+        if(this.returnSceneTimer >= images.return.length){
+            push();
+            fill(255);
+            stroke(0);
+            pop();
+            //showText(this.returnText[this.textIndex], 20, color(0), width * 0.7, height*0.8);
+            if(this.checkInput()){
+                this.textIndex += 1;
+                if(this.textIndex >= this.returnText.length){
+                    this.changeState(gameState.EDITING);
+                    changeScene(scenes.EDIT_SCENE);
+                    this.textIndex = 0;
+                }
             }
         }
     }

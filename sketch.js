@@ -28,7 +28,7 @@ let scenes = { // 빈씬:0, 시냇가:1, 안방:2, 부엌:3, 마당:4, 인트로
   CALLING: 7,
   RETURN_CAR: 8,
   EDIT_SCENE: 9,
-  EDNING: 10
+  ENDING: 10
 };
 let totalSceneNum = 11; 
 // 객체들
@@ -60,9 +60,15 @@ function preload(){
   images.kitchen = loadImage("Resources/Images/kitchen.png");
   images.outside = loadImage("Resources/Images/outside.png");
   images.calling = loadImage("Resources/Images/calling.png");
-  images.return = loadImage("Resources/Images/return.png");
   images.my_room = loadImage("Resources/Images/my_room.png");
   images.my_room_radio = loadImage("Resources/Images/my_room_radio.png");
+  images.return = [];
+  images.return[0] = loadImage("Resources/Images/return0.png");
+  images.return[1] = loadImage("Resources/Images/return1.png");
+  images.return[2] = loadImage("Resources/Images/return2.png");
+  images.return[3] = loadImage("Resources/Images/return3.png");
+  images.return[4] = loadImage("Resources/Images/return4.png");
+  images.return[5] = loadImage("Resources/Images/return5.png");
 }
 
 function setup() {
@@ -152,6 +158,6 @@ function initBackgroundImage(){
   backgroundImage[scenes.BEDROOM] = images.bedroom;
   backgroundImage[scenes.KITCHEN] = images.kitchen;
   backgroundImage[scenes.OUTSIDE] = images.outside;
-  backgroundImage[scenes.RETURN_CAR] = images.return;
+  backgroundImage[scenes.RETURN_CAR] = images.return[0];
   backgroundImage[scenes.CALLING] = images.calling;
 }
