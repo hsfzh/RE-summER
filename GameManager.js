@@ -16,6 +16,7 @@ class GameManager{
         this.inputTimer = 0.3;
         this.inputInterval = 0.3;
         this.returnSceneTimer = 0;
+        this.isVideoFinished = false;
     }
     changeState(newState){
         this.currentState = newState;
@@ -33,9 +34,15 @@ class GameManager{
                 mapButton.changeShowState(true);
             }
         }
-        if(this.currentState == gameState.RETURN_CAR) this.returnSceneTimer = 0;
-        if(this.currentState == gameState.NONE) startButton.changeShowState(true);
-        else startButton.changeShowState(false);
+        if(this.currentState === gameState.NONE) 
+            startButton.changeShowState(true);
+        else 
+            startButton.changeShowState(false);
+        if (this.currentState === gameState.RETURN_CAR) {
+            this.isVideoFinished = false;
+            returnVideo.stop();
+            returnVideo.play();
+        }
     }
     update(time){
         if(this.inputTimer >= 0) this.inputTimer -= time;
@@ -102,17 +109,28 @@ class GameManager{
         }
     }
     updateReturnScene(time){
-        this.returnSceneTimer += time * 0.5;
-        showImage(images.return[int(this.returnSceneTimer)], 0, width/2, height/2);
-        if(this.returnSceneTimer >= images.return.length){
+        if (!this.isVideoFinished && returnVideo.time() >= returnVideo.duration() - 0.1) {
+            this.isVideoFinished = true;
+        }
+        if (!this.isVideoFinished) {
+            showImage(returnVideo, 0, width / 2, height / 2);
+        } else {
+            showImage(returnVideo, 0, width / 2, height / 2); 
+            
             push();
             fill(255);
             stroke(0);
+            rectMode(CENTER);
+            rect(width / 2, height * 0.825, 600, 100);
             pop();
-            //showText(this.returnText[this.textIndex], 20, color(0), width * 0.7, height*0.8);
-            if(this.checkInput()){
+
+            if (this.textIndex < this.returnText.length) {
+                showText(this.returnText[this.textIndex], 25, color(0), width / 2, height * 0.825);
+            }
+
+            if (this.checkInput()) {
                 this.textIndex += 1;
-                if(this.textIndex >= this.returnText.length){
+                if (this.textIndex >= this.returnText.length) {
                     this.changeState(gameState.EDITING);
                     changeScene(scenes.EDIT_SCENE);
                     this.textIndex = 0;
