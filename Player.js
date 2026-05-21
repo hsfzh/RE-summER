@@ -24,8 +24,8 @@ class Player extends GameObject{
             LEFT: 2,
             RIGHT: 3
         }
-        this.direction = this.directions.RIGHT;
-        this.facing = this.directions.RIGHT;
+        this.direction = this.directions.UP;
+        this.facing = this.directions.UP;
         this.isMoving = false;
         this.animationTimer = 0;
         this.animationInterval = 0.25;

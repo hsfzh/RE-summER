@@ -56,10 +56,10 @@ class OutsideButton extends Button{
         push();
         translate(this.x, this.y);
         rectMode(CENTER);
-        rect(0, 0, this.sizeX, this.sizeY);
+        //rect(0, 0, this.sizeX, this.sizeY);
         textAlign(CENTER, CENTER);
         fill(0);
-        text("야외", 0, 0);
+        //text("야외", 0, 0);
         pop();
     }
 }
@@ -73,10 +73,10 @@ class BedroomButton extends Button{
         push();
         translate(this.x, this.y);
         rectMode(CENTER);
-        rect(0, 0, this.sizeX, this.sizeY);
+        //rect(0, 0, this.sizeX, this.sizeY);
         textAlign(CENTER, CENTER);
         fill(0);
-        text("안방", 0, 0);
+        //text("안방", 0, 0);
         pop();
     }
 }
@@ -90,10 +90,10 @@ class KitchenButton extends Button{
         push();
         translate(this.x, this.y);
         rectMode(CENTER);
-        rect(0, 0, this.sizeX, this.sizeY);
+        //rect(0, 0, this.sizeX, this.sizeY);
         textAlign(CENTER, CENTER);
         fill(0);
-        text("부엌", 0, 0);
+        //text("부엌", 0, 0);
         pop();
     }
 }
@@ -107,10 +107,10 @@ class StreamButton extends Button{
         push();
         translate(this.x, this.y);
         rectMode(CENTER);
-        rect(0, 0, this.sizeX, this.sizeY);
+        //rect(0, 0, this.sizeX, this.sizeY);
         textAlign(CENTER, CENTER);
         fill(0);
-        text("시냇가", 0, 0);
+        //text("시냇가", 0, 0);
         pop();
     }
 }

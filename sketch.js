@@ -140,10 +140,10 @@ function drawBackground(){
   showImage(backgroundImage[sceneNum], 0, width/2, height/2);
 }
 function initMapButtons(){
-  let outsideButton = new OutsideButton(width*0.34, height*0.52, 80, 80);
-  let bedroomButton = new BedroomButton(width*0.255, height*0.29, 80, 80);
-  let kitchenButton = new KitchenButton(width*0.4, height*0.28, 80, 80);
-  let streamButton = new StreamButton(width*0.74, height*0.38, 80, 80);
+  let outsideButton = new OutsideButton(width*0.34, height*0.56, 80, 80);
+  let bedroomButton = new BedroomButton(width*0.21, height*0.31, 80, 80);
+  let kitchenButton = new KitchenButton(width*0.4, height*0.31, 80, 80);
+  let streamButton = new StreamButton(width*0.79, height*0.42, 80, 80);
   mapButtons.push(streamButton);
   mapButtons.push(bedroomButton);
   mapButtons.push(kitchenButton);

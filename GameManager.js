@@ -2,7 +2,7 @@ class GameManager{
     constructor(){
         this.currentState = gameState.NONE;
         this.introText = [
-            "다 왔어, 곧 할머니 댁이야.\n창문 열어봐, 이 냄새 좋지?",
+            "다 왔어, 곧 할머니 댁이야.",
             "창문 열어봐, 이 냄새 좋지?"
         ];
         this.callingText = [
@@ -71,9 +71,9 @@ class GameManager{
         fill(255);
         stroke(0);
         rectMode(CENTER);
-        rect(width/2, height*0.825, 600, 140);
+        rect(width*0.48, height*0.85, 600, 120);
         pop();
-        showText(this.introText[this.textIndex], 30, color(0), width/2, height*0.825);
+        showText(this.introText[this.textIndex], 30, color(0), width*0.48, height*0.85);
         if(this.checkInput()){
             this.textIndex += 1;
             if(this.textIndex >= this.introText.length){
