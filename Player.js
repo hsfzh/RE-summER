@@ -1,6 +1,7 @@
 class Player extends GameObject{
-    constructor(_x, _y, _img, _scale = 1, _collisionObject = true, _priority = 0){
-        super(_x, _y, _img, _scale, _collisionObject, _priority);
+    constructor(_x, _y, _imgs, _scale = 1, _collisionObject = true, _priority = 0){
+        super(_x, _y, _imgs[0], _scale, _collisionObject, _priority);
+        this.imgs = _imgs;
         this.speed = 3;
         this.vx = 0;
         this.vy = 0;
@@ -25,6 +26,9 @@ class Player extends GameObject{
         }
         this.direction = this.directions.RIGHT;
         this.facing = this.directions.RIGHT;
+        this.isMoving = false;
+        this.animationTimer = 0;
+        this.animationInterval = 0.25;
         this.latestKey = -1;
         this.visitedMap = {
             BEDROOM: false,
@@ -40,7 +44,11 @@ class Player extends GameObject{
         if(this.isJustPressed(this.controls.INTERACT)){
             this.interact(this.findSound());
         }
-
+        if(this.animationTimer <= 0) this.animationTimer = this.animationInterval*2;
+        if(this.isMoving){
+            this.animationTimer -= time;
+        }
+        this.handleAnimation();
         // 키 확인은 루프 마지막에 유지
         this.backUpInput();
     }
@@ -70,7 +78,10 @@ class Player extends GameObject{
         this.vy = tempVy;
     }
     moveWithPhysics(){
-        if(this.vx === 0 && this.vy === 0) return;
+        if(this.vx === 0 && this.vy === 0) {
+            this.isMoving = false;
+            return;
+        }
 
         let moveX = this.vx * this.speed;
         let moveY = this.vy * this.speed;
@@ -94,6 +105,21 @@ class Player extends GameObject{
         }
         // 최종 보정된 값으로 이동
         this.move(moveX, moveY);
+        if(moveX>0) this.direction = this.directions.RIGHT;
+        if(moveX<0) this.direction = this.directions.LEFT;
+        if(moveY>0) this.direction = this.directions.DOWN;
+        if(moveY<0) this.direction = this.directions.UP;
+        this.facing = this.direction;
+        this.isMoving = true;
+    }
+    handleAnimation(){
+        if(this.isMoving){
+            let index = this.facing*2+1;
+            if(this.animationTimer <= this.animationInterval) index = this.facing*2;
+            this.img = this.imgs[index];
+        }else{
+            this.img = this.imgs[this.facing*2];
+        }
     }
     backUpInput(){
         for (let key in this.controls) {

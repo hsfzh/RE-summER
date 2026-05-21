@@ -43,13 +43,26 @@ let mapButtons = [];
 let images = {}; // 딕셔너리 형태 preload에서 images.player = loadImage 이렇게 새로운 변수 생성 없이 초기화
 
 function preload(){
-  images.player = loadImage("Resources/Images/kirby.png");
-  images.bed = loadImage("Resources/Images/bed.png");
-  images.sink = loadImage("Resources/Images/sink.png");
-  images.bench = loadImage("Resources/Images/bench.png");
+  images.player = [ //up, down, left, right
+    loadImage("Resources/Images/player_back.png"),
+    loadImage("Resources/Images/player_back2.png"),
+    loadImage("Resources/Images/player_front.png"),
+    loadImage("Resources/Images/player_front2.png"),
+    loadImage("Resources/Images/player_left.png"),
+    loadImage("Resources/Images/player_left2.png"),
+    loadImage("Resources/Images/player_right.png"),
+    loadImage("Resources/Images/player_right2.png"),
+  ];
   images.introBackground = loadImage("Resources/Images/intro.png");
-  images.map_selection = loadImage("Resources/Images/map_selection.png");
+  images.map = loadImage("Resources/Images/map.png");
+  images.stream = loadImage("Resources/Images/stream.png");
+  images.bedroom = loadImage("Resources/Images/bedroom.png");
+  images.kitchen = loadImage("Resources/Images/kitchen.png");
+  images.outside = loadImage("Resources/Images/outside.png");
   images.calling = loadImage("Resources/Images/calling.png");
+  images.return = loadImage("Resources/Images/return.png");
+  images.my_room = loadImage("Resources/Images/my_room.png");
+  images.my_room_radio = loadImage("Resources/Images/my_room_radio.png");
 }
 
 function setup() {
@@ -61,20 +74,16 @@ function setup() {
   mapButton.changeShowState(false);
   callButton = new CallButton(0.84*width, 0.06*height, 100, 50);
   callButton.changeShowState(false);
-  player = new Player(width/2, height/2, images.player, 0.25, true, 1);
+  player = new Player(width/2, height/2, images.player, 0.15, true, 1);
   initMapButtons();
   initBackgroundImage();
   sceneNum = 0;
   for(let i=0; i<totalSceneNum; i++) sceneObjects.push([]);
   // 씬 오브젝트 배치
   // 시냇가 씬
-  sceneObjects[scenes.STREAM].push(new GameObject(1000, 200, images.bench));
   // 안방씬
-  sceneObjects[scenes.BEDROOM].push(new GameObject(200, 200, images.bed));
   // 부엌 씬
-  sceneObjects[scenes.KITCHEN].push(new GameObject(400, 200, images.sink));
   // 마당 씬
-  sceneObjects[scenes.OUTSIDE].push(new GameObject(400, 200, images.sink));
 }
 
 function draw() {
@@ -138,6 +147,11 @@ function initMapButtons(){
 function initBackgroundImage(){
   for(let i=0; i<totalSceneNum; i++) backgroundImage.push(null);
   backgroundImage[scenes.INTRO] = images.introBackground;
-  backgroundImage[scenes.MAP_SELECT] = images.map_selection;
+  backgroundImage[scenes.MAP_SELECT] = images.map;
+  backgroundImage[scenes.STREAM] = images.stream;
+  backgroundImage[scenes.BEDROOM] = images.bedroom;
+  backgroundImage[scenes.KITCHEN] = images.kitchen;
+  backgroundImage[scenes.OUTSIDE] = images.outside;
+  backgroundImage[scenes.RETURN_CAR] = images.return;
   backgroundImage[scenes.CALLING] = images.calling;
 }
