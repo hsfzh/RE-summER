@@ -36,7 +36,7 @@ class Player extends GameObject{
             OUTSIDE: false,
             STREAM: false
         };
-        // this.inventory = new Inventroy();
+        this.inventory = new Inventory();
     }
     update(time){
         this.handleInput();
@@ -128,12 +128,37 @@ class Player extends GameObject{
     }
     findSound(){
         // TODO: 상호작용 가능한 가장 가까운 소리 찾고 반환
-        return null;
+            let nearest = null;
+            let nearestDistance = 500;
+
+            for(let object of sceneObjects[sceneNum]){
+
+                if(!(object instanceof SoundObject)) continue;
+                if(!object.isActive) continue;
+
+                let d = dist(this.x,this.y,object.x,object.y);
+                console.log("거리:", d);
+                if(d < nearestDistance){
+                    nearest = object;
+                    nearestDistance = d;
+                }
+            }
+
+        return nearest;
     }
+
     interact(sound){
         console.log("상호작용 시도");
-        if(!sound) return;
+        if(!sound) {
+            console.log("사운드 없음.")
+            return;
+        }
         // TODO: 주변 사운드 확인 후 인벤토리에 넣기.
+        console.log("sound =", sound);
+        console.log("sound 타입 =", sound.constructor.name);
+        this.inventory.add(sound.soundId);
+        console.log(`${sound.soundId} 획득!`);
+        console.log(this.inventory.items);
     }
     isJustPressed(keyCodeValue) {
         const isDown = keyIsDown(keyCodeValue);

@@ -70,6 +70,12 @@ function preload(){
   images.return[3] = loadImage("Resources/Images/return3.png");
   images.return[4] = loadImage("Resources/Images/return4.png");
   images.return[5] = loadImage("Resources/Images/return5.png");
+
+  SOUND_LIBRARY.water.icon = loadImage("Resources/Images/icons_outside.png");
+  SOUND_LIBRARY.water.audio = loadSound("Resources/Sounds/knock.mp3");
+  SOUND_LIBRARY.clock.icon = loadImage("Resources/Images/icons_kitchen.png");
+  SOUND_LIBRARY.clock.audio = loadSound("Resources/Sounds/ticktock.mp3");
+
 }
 
 function setup() {
@@ -86,8 +92,10 @@ function setup() {
   initBackgroundImage();
   sceneNum = 0;
   for(let i=0; i<totalSceneNum; i++) sceneObjects.push([]);
+  console.log(sceneObjects);
   // 씬 오브젝트 배치
   // 시냇가 씬
+  initSceneObjects();
   // 안방씬
   // 부엌 씬
   // 마당 씬
