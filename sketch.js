@@ -95,10 +95,10 @@ function setup() {
   console.log(sceneObjects);
   // 씬 오브젝트 배치
   // 시냇가 씬
-  initSceneObjects();
   // 안방씬
   // 부엌 씬
   // 마당 씬
+  initSceneObjects(); //SceneObjectLoader.js
   returnVideo = createVideo("Resources/Videos/return.mp4");
   returnVideo.hide();
 }

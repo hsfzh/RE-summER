@@ -1,6 +1,7 @@
 class Inventory {
   constructor() {
     this.items = [];
+    this.selectedIndex = 0;
   }
 
   //아이템 보유 여부 확인
@@ -43,6 +44,7 @@ class Inventory {
   }
 
   draw(x, y) {
+
     push();
 
     fill(255);
@@ -51,17 +53,25 @@ class Inventory {
 
     text("Collected Sounds", x, y);
 
-    for (let i = 0; i < this.items.length; i++) {
-      text(
-        `${i + 1}. ${this.items[i].soundId}`,
-        x,
-        y + 30 + i * 20
-      );
+    for(let i = 0; i < this.items.length; i++) {
+
+        let prefix = "  ";
+
+        if(i === this.selectedIndex){
+            prefix = "> ";
+        }
+
+        text(
+            `${prefix}${i + 1}. ${this.items[i].soundId}`,
+            x,
+            y + 30 + i * 20
+        );
     }
 
     pop();
   }
-
+  
+  
   save() {
     localStorage.setItem(
       "soundInventory",
@@ -76,4 +86,44 @@ class Inventory {
       this.items = JSON.parse(data);
     }
   }
+
+  selectNext() {
+     if(this.items.length === 0)
+        return;
+
+    this.selectedIndex++;
+
+    if(this.selectedIndex >= this.items.length)
+        this.selectedIndex = 0;
+  }
+
+  selectPrevious() {
+
+    if(this.items.length === 0)
+        return;
+
+    this.selectedIndex--;
+
+    if(this.selectedIndex < 0)
+        this.selectedIndex = this.items.length - 1;
+  }
+
+  removeSelected() {
+
+    if(this.items.length === 0)
+        return;
+
+    const soundId =
+        this.items[this.selectedIndex].soundId;
+
+    this.remove(soundId);
+
+    if(
+        this.selectedIndex >= this.items.length
+    ){
+        this.selectedIndex =
+            Math.max(0, this.items.length - 1);
+    }
+}
+
 }

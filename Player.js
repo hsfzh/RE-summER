@@ -14,7 +14,11 @@ class Player extends GameObject{
             DOWN_ALT: DOWN_ARROW,
             LEFT_ALT: LEFT_ARROW,
             RIGHT_ALT: RIGHT_ARROW,
-            INTERACT: 69 // E
+            INTERACT: 69, // E
+            INVENTORY: 73, // I
+            INVENTORY_UP: 78, // N
+            INVENTORY_DOWN: 77, // M
+            DELETE_ITEM: 82 // R
         };
         this.lastAxis = "none";
         this.prevPressed = {};
@@ -36,14 +40,37 @@ class Player extends GameObject{
             OUTSIDE: false,
             STREAM: false
         };
+        
+        //인벤토리 확인용
         this.inventory = new Inventory();
+        this.showInventory = false;
     }
     update(time){
         this.handleInput();
         this.moveWithPhysics();
+
         if(this.isJustPressed(this.controls.INTERACT)){
             this.interact(this.findSound());
         }
+        
+        if(this.isJustPressed(this.controls.INVENTORY)) this.showInventory = !this.showInventory;
+        if(this.showInventory){
+
+            if(this.isJustPressed(this.controls.INVENTORY_DOWN)){
+            this.inventory.selectNext();
+            }
+
+            if(this.isJustPressed(this.controls.INVENTORY_UP)){
+            this.inventory.selectPrevious();
+            }
+
+            if(this.isJustPressed(this.controls.DELETE_ITEM)){
+            this.inventory.removeSelected();
+            }
+            this.inventory.draw(20,20);
+        }
+
+        
         if(this.animationTimer <= 0) this.animationTimer = this.animationInterval*2;
         if(this.isMoving){
             this.animationTimer -= time;
@@ -52,6 +79,7 @@ class Player extends GameObject{
         // 키 확인은 루프 마지막에 유지
         this.backUpInput();
     }
+
     handleInput(){
         if (this.isJustPressed(this.controls.UP) || this.isJustPressed(this.controls.DOWN) ||
             this.isJustPressed(this.controls.UP_ALT) || this.isJustPressed(this.controls.DOWN_ALT)) {
@@ -156,8 +184,14 @@ class Player extends GameObject{
         // TODO: 주변 사운드 확인 후 인벤토리에 넣기.
         console.log("sound =", sound);
         console.log("sound 타입 =", sound.constructor.name);
+        
+        if(this.inventory.has(sound.soundId)) {
+            console.log("이미 보유중인 아이템입니다.");
+            return;
+        }
         this.inventory.add(sound.soundId);
         console.log(`${sound.soundId} 획득!`);
+        sound.deactivate();
         console.log(this.inventory.items);
     }
     isJustPressed(keyCodeValue) {
