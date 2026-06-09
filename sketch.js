@@ -70,6 +70,7 @@ function preload(){
   images.return[3] = loadImage("Resources/Images/return3.png");
   images.return[4] = loadImage("Resources/Images/return4.png");
   images.return[5] = loadImage("Resources/Images/return5.png");
+  images.call_mom = loadImage("Resources/Images/icons/call_mom.png");
 
   SOUND_LIBRARY.water.icon = loadImage("Resources/Images/icons_outside.png");
   SOUND_LIBRARY.water.audio = loadSound("Resources/Sounds/knock.mp3");
@@ -85,7 +86,7 @@ function setup() {
   startButton = new StartButton(width/2, height * 0.75, 200, 100);
   mapButton = new MapButton(0.16*width, 0.06*height, 100, 50);
   mapButton.changeShowState(false);
-  callButton = new CallButton(0.84*width, 0.06*height, 100, 50);
+  callButton = new CallButton(0.88*width, 0.06*height, 100, 50, images.call_mom);
   callButton.changeShowState(false);
   player = new Player(width/2, height/2, images.player, 0.15, true, 1);
   initMapButtons();

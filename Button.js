@@ -1,5 +1,5 @@
 class Button{
-    constructor(_x, _y, _sizeX, _sizeY){
+    constructor(_x, _y, _sizeX, _sizeY, _img = null){
         this.x = _x;
         this.y = _y;
         this.sizeX = _sizeX;
@@ -8,6 +8,7 @@ class Button{
         this.halfsizeY = _sizeY * 0.5;
         this.ishovering = false;
         this.show = true;
+        this.img = _img;
         buttons.push(this);
     }
     changeShowState(state){
@@ -132,8 +133,8 @@ class MapButton extends Button{
     }
 }
 class CallButton extends Button{
-    constructor(_x, _y, _sizeX, _sizeY){
-        super(_x, _y, _sizeX, _sizeY);
+    constructor(_x, _y, _sizeX, _sizeY, _img){
+        super(_x, _y, _sizeX, _sizeY, _img);
         this.pressed = false;
     }
     performAction(){
@@ -144,11 +145,12 @@ class CallButton extends Button{
     display(){
         push();
         translate(this.x, this.y);
-        rectMode(CENTER);
-        rect(0, 0, this.sizeX, this.sizeY);
-        textAlign(CENTER, CENTER);
-        fill(0);
-        text("엄마에게 전화하기", 0, 0);
+        //rectMode(CENTER);
+        //rect(0, 0, this.sizeX, this.sizeY);
+        //textAlign(CENTER, CENTER);
+        //fill(0);
+        //text("엄마에게 전화하기", 0, 0);
+        showImage(this.img, 0.5, 0, 0);
         pop();
     }
     changeShowState(state){

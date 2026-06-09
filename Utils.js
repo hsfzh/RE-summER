@@ -1,7 +1,9 @@
 function showImage(img, scale, x, y){
   imageMode(CENTER);
-  if(img==null||img===undefined)
+  if(img==null||img===undefined){
+    console.log("이미지 없음");
     return;
+  }
   if(scale == 0)
   {
     let xScale = width/img.width;
