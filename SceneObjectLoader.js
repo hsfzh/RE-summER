@@ -5,6 +5,38 @@ function initSceneObjects(){
         new SoundObject(400,600,"water")
     );
 
+    // 벽 및 장애물
+    sceneObjects[scenes.STREAM].push(
+        new CollisionObject(283,87,570,177)
+    );
+    sceneObjects[scenes.STREAM].push(
+        new CollisionObject(80,213,200,200)
+    );
+    sceneObjects[scenes.STREAM].push(
+        new CollisionObject(936,275,326,10)
+    );
+    sceneObjects[scenes.STREAM].push(
+        new CollisionObject(620,423,88,43)
+    );
+    sceneObjects[scenes.STREAM].push(
+        new CollisionObject(538,470,97,37)
+    );
+    sceneObjects[scenes.STREAM].push(
+        new CollisionObject(846,434,40,40)
+    );
+    sceneObjects[scenes.STREAM].push(
+        new CollisionObject(1014,368,188,38)
+    );
+    sceneObjects[scenes.STREAM].push(
+        new CollisionObject(926,48,728,102)
+    );
+    sceneObjects[scenes.STREAM].push(
+        new CollisionObject(748,667,245,84)
+    );
+    sceneObjects[scenes.STREAM].push(
+        new CollisionObject(1165,633,246,157)
+    );
+
     // 안방
     // 벽 및 장애물
     sceneObjects[scenes.BEDROOM].push(
