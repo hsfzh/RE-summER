@@ -40,6 +40,7 @@ class Player extends GameObject{
             OUTSIDE: false,
             STREAM: false
         };
+        this.baseScale = _scale;
         
         //인벤토리 확인용
         this.inventory = new Inventory();
@@ -48,6 +49,7 @@ class Player extends GameObject{
     update(time){
         this.handleInput();
         this.moveWithPhysics();
+        this.scale = map(this.y, 0, height, this.baseScale * 0.7, this.baseScale);
 
         if(this.isJustPressed(this.controls.INTERACT)){
             this.interact(this.findSound());
@@ -104,6 +106,14 @@ class Player extends GameObject{
         
         this.vx = tempVx;
         this.vy = tempVy;
+
+        if (this.vx !== 0 || this.vy !== 0) {
+            if (this.vx > 0) this.direction = this.directions.RIGHT;
+            if (this.vx < 0) this.direction = this.directions.LEFT;
+            if (this.vy > 0) this.direction = this.directions.DOWN;
+            if (this.vy < 0) this.direction = this.directions.UP;
+            this.facing = this.direction;
+        }
     }
     moveWithPhysics(){
         if(this.vx === 0 && this.vy === 0) {
@@ -119,25 +129,18 @@ class Player extends GameObject{
 
             let hit = this.collider.checkCollision(object.collider);
             if (hit.collided) {
-                // 현재 내 이동 방향과 벽의 법선 벡터의 내적 계산
                 let dot = moveX * hit.nx + moveY * hit.ny;
                 if (dot < 0) {
-                    // 벽으로 파고드는 속도 성분만큼 제거
                     moveX -= dot * hit.nx;
                     moveY -= dot * hit.ny;
                 }
-                // 이미 파고든 깊이만큼 최소한으로 보정
                 moveX += hit.nx * hit.overlap * 0.5;
                 moveY += hit.ny * hit.overlap * 0.5;
             }
         }
-        // 최종 보정된 값으로 이동
+        
         this.move(moveX, moveY);
-        if(moveX>0) this.direction = this.directions.RIGHT;
-        if(moveX<0) this.direction = this.directions.LEFT;
-        if(moveY>0) this.direction = this.directions.DOWN;
-        if(moveY<0) this.direction = this.directions.UP;
-        this.facing = this.direction;
+        
         this.isMoving = true;
     }
     handleAnimation(){

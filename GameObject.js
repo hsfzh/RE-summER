@@ -4,8 +4,8 @@ class GameObject{
     this.y = _y;
     this.img = _img;
     this.scale = _scale;
-    this.height = _img.height * _scale;
-    this.width = _img.width * _scale;
+    this.height = _img? _img.height * _scale : 0;
+    this.width = _img? _img.width * _scale : 0;
     this.collidable = _collisionObject; 
     if(this.collidable) this.collider = new Collider(this, this.height, this.width);
     this.id = objects.length;
@@ -29,6 +29,8 @@ class GameObject{
   move(dx, dy){
     this.x += dx;
     this.y += dy;
+    this.x = constrain(this.x, this.width/2, width - this.width/2);
+    this.y = constrain(this.y, this.height/2, height - this.height/2);
     this.updateCollider();
   }
   updateCollider(){
@@ -38,15 +40,7 @@ class GameObject{
   }
 
   display(){
-    if(this.img == null) return;
     if(!this.isActive) return;
-    push();
-    noSmooth();
-    noFill();
-    noStroke();
-    translate(this.x, this.y);
-    showImage(this.img, this.scale, 0, 0);
-    pop();
     // 충돌 판정 범위 시각화 코드 (디버깅용)
     if(this.collidable && isDebugMode){
         for(let colliderCircle of this.collider.circles){
@@ -57,6 +51,14 @@ class GameObject{
             pop();
         }
     }
+    if(this.img == null) return;
+    push();
+    noSmooth();
+    noFill();
+    noStroke();
+    translate(this.x, this.y);
+    showImage(this.img, this.scale, 0, 0);
+    pop();
   }
 
   deactivate(){ this.isActive = false; }
@@ -141,4 +143,13 @@ class Collider{
             circle.actualP.y = circle.p.y + this.parent.y;
         }
     }
+}
+
+class CollisionObject extends GameObject{
+    constructor(_x, _y, _width, _height){
+    super(_x, _y, null, 1, true, -1);
+    this.height = _height;
+    this.width = _width;
+    this.collider = new Collider(this, this.height, this.width);
+  }
 }

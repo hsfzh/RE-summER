@@ -88,7 +88,7 @@ function setup() {
   mapButton.changeShowState(false);
   callButton = new CallButton(0.88*width, 0.06*height, 100, 50, images.call_mom);
   callButton.changeShowState(false);
-  player = new Player(width/2, height/2, images.player, 0.15, true, 1);
+  player = new Player(width/2, height/2, images.player, 0.2, true, 1);
   initMapButtons();
   initBackgroundImage();
   sceneNum = 0;
