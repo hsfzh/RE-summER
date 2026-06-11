@@ -61,5 +61,32 @@ function initSceneObjects(){
     );
 
     // 마당
-
+    // 벽 및 장애물
+    sceneObjects[scenes.OUTSIDE].push(
+        new CollisionObject(width/2,65,width,130)
+    );
+    sceneObjects[scenes.OUTSIDE].push(
+        new CollisionObject(622,319,241,63)
+    );
+    sceneObjects[scenes.OUTSIDE].push(
+        new CollisionObject(314,296,74,16)
+    );
+    sceneObjects[scenes.OUTSIDE].push(
+        new CollisionObject(1008,248,122,53)
+    );
+    sceneObjects[scenes.OUTSIDE].push(
+        new CollisionObject(1160,435,252,560)
+    );
+    sceneObjects[scenes.OUTSIDE].push(
+        new CollisionObject(1047,596,240,248)
+    );
+    sceneObjects[scenes.OUTSIDE].push(
+        new CollisionObject(60,height/2,120,height)
+    );
+    sceneObjects[scenes.OUTSIDE].push(
+        new CollisionObject(362,629,483,171)
+    );
+    sceneObjects[scenes.OUTSIDE].push(
+        new CollisionObject(946,655,672,119)
+    );
 }
