@@ -43,7 +43,30 @@ let mapButtons = [];
 let images = {}; // 딕셔너리 형태 preload에서 images.player = loadImage 이렇게 새로운 변수 생성 없이 초기화
 let returnVideo;
 
+let soundManager;
+let mixerUI;
+let postEditSoundFiles = {};
+const postEditBgmConfig = { id: "main_bgm_source", name: "MAIN BGM", sceneName: "MAIN", file: "Resources/Sounds/final/main_bgm.mp3", color: [86, 132, 210], volume: 0.26, masterVolume: 0.78, lowPassFreq: 9200, reverbWet: 0.06 };
+const postEditSoundConfigs = [
+  { id: "creek_water", name: "시냇물", sceneName: "시냇가", file: "Resources/Sounds/final/creek_water.m4a", color: [78, 157, 202], volume: 0.92, lowPassFreq: 8500, reverbWet: 0.12 },
+  { id: "cricket", name: "귀뚜라미", sceneName: "마당", file: "Resources/Sounds/final/cricket.m4a", color: [110, 168, 96], volume: 0.9, lowPassFreq: 9200, reverbWet: 0.16 },
+  { id: "fan_hum", name: "선풍기", sceneName: "안방", file: "Resources/Sounds/final/fan_hum.m4a", color: [126, 143, 175], volume: 0.88, rate: 0.95, lowPassFreq: 3600, delayWet: 0.03 },
+  { id: "old_tv", name: "브라운관 TV", sceneName: "안방", file: "Resources/Sounds/final/old_tv.m4a", color: [180, 115, 205], volume: 0.86, lowPassFreq: 4300, delayWet: 0.08 },
+  { id: "wood_chop", name: "장작 패기", sceneName: "부엌", file: "Resources/Sounds/final/wood_chop.m4a", color: [168, 101, 58], volume: 0.98, lowPassFreq: 8800 },
+  { id: "phone_ring", name: "전화벨", sceneName: "안방", file: "Resources/Sounds/final/phone_ring.m4a", color: [228, 176, 72], volume: 0.96, lowPassFreq: 9600, delayWet: 0.04 },
+  { id: "knife_chop", name: "도마 칼질", sceneName: "부엌", file: "Resources/Sounds/final/knife_chop.m4a", color: [224, 137, 70], volume: 1.0, lowPassFreq: 10000 },
+  { id: "fish_catch_underwater", name: "물고기 잡기", sceneName: "시냇가", file: "Resources/Sounds/final/fish_catch_underwater.m4a", color: [73, 146, 186], volume: 0.94, lowPassFreq: 7000, reverbWet: 0.10 },
+  { id: "stew_boil", name: "찌개 끓기", sceneName: "부엌", file: "Resources/Sounds/final/stew_boil.m4a", color: [210, 96, 74], volume: 0.94, lowPassFreq: 6200, reverbWet: 0.10 },
+  { id: "dog_bark", name: "강아지", sceneName: "마당", file: "Resources/Sounds/final/dog_bark.m4a", color: [190, 134, 76], volume: 0.98, lowPassFreq: 9500 },
+  { id: "lamp_switch", name: "스탠드 스위치", sceneName: "안방", file: "Resources/Sounds/final/lamp_switch.m4a", color: [245, 203, 92], volume: 0.96, lowPassFreq: 9800 },
+  { id: "helicopter_pass", name: "헬리콥터", sceneName: "마당", file: "Resources/Sounds/final/helicopter_pass.m4a", color: [122, 132, 150], volume: 0.9, lowPassFreq: 5600, delayWet: 0.05 },
+  { id: "sweeping_yard", name: "마당 쓸기", sceneName: "마당", file: "Resources/Sounds/final/sweeping_yard.m4a", color: [143, 115, 77], volume: 0.92, lowPassFreq: 6500 },
+  { id: "water_splash", name: "물 첨벙", sceneName: "시냇가", file: "Resources/Sounds/final/water_splash.m4a", color: [88, 175, 215], volume: 0.98, lowPassFreq: 9000, reverbWet: 0.08 },
+  { id: "grilling_meat", name: "고기 굽기", sceneName: "부엌", file: "Resources/Sounds/final/grilling_meat.m4a", color: [193, 92, 55], volume: 0.94, lowPassFreq: 7200 }
+];
+
 function preload(){
+  soundFormats("mp3", "m4a", "wav", "ogg");
   images.player = [ //up, down, left, right
     loadImage("Resources/Images/player_back.png"),
     loadImage("Resources/Images/player_back2.png"),
@@ -76,11 +99,18 @@ function preload(){
   SOUND_LIBRARY.water.audio = loadSound("Resources/Sounds/knock.mp3");
   SOUND_LIBRARY.clock.icon = loadImage("Resources/Images/icons_kitchen.png");
   SOUND_LIBRARY.clock.audio = loadSound("Resources/Sounds/ticktock.mp3");
+  postEditSoundFiles[postEditBgmConfig.id] = loadSound(postEditBgmConfig.file);
+  for(const config of postEditSoundConfigs){
+    postEditSoundFiles[config.id] = loadSound(config.file);
+  }
 
 }
 
 function setup() {
-  createCanvas(1280, 720);
+  const mainCanvas = createCanvas(1280, 720);
+  mainCanvas.elt.addEventListener("wheel", event => {
+    if(event.ctrlKey || event.metaKey) event.preventDefault();
+  }, { passive: false });
   initDebugButtons();
   gameManager = new GameManager();
   startButton = new StartButton(width/2, height * 0.75, 200, 100);
@@ -102,9 +132,14 @@ function setup() {
   initSceneObjects(); //SceneObjectLoader.js
   returnVideo = createVideo("Resources/Videos/return.mp4");
   returnVideo.hide();
+  initPostEditSystem();
 }
 
 function draw() {
+  if(gameManager && (gameManager.currentState === gameState.EDITING || gameManager.currentState === gameState.END)){
+    gameManager.update(deltaTime/1000);
+    return;
+  }
   drawBackground(sceneNum);
   debugDraw(); // 디버깅용
   gameManager.update(deltaTime/1000);
@@ -116,6 +151,14 @@ function draw() {
 }
 
 function keyPressed(){
+  if(gameManager && gameManager.currentState === gameState.EDITING && mixerUI){
+    userStartAudio();
+    return mixerUI.keyPressed();
+  }
+  if(gameManager && gameManager.currentState === gameState.END){
+    userStartAudio();
+    return false;
+  }
   if(keyCode == 84){
     isDebugMode = !isDebugMode;
     for(let button of debugButtons){
@@ -125,6 +168,14 @@ function keyPressed(){
 }
 
 function mousePressed(){
+  if(gameManager && gameManager.currentState === gameState.EDITING && mixerUI){
+    userStartAudio();
+    return mixerUI.mousePressed();
+  }
+  if(gameManager && gameManager.currentState === gameState.END && mixerUI){
+    userStartAudio();
+    return mixerUI.mousePressedFinishScreen();
+  }
   for(let button of buttons){
     if(button.ishovering && button.show){
       button.performAction();
@@ -172,4 +223,45 @@ function initBackgroundImage(){
   backgroundImage[scenes.OUTSIDE] = images.outside;
   backgroundImage[scenes.RETURN_CAR] = images.return[0];
   backgroundImage[scenes.CALLING] = images.calling;
+}
+
+function doubleClicked(){
+  if(gameManager && gameManager.currentState === gameState.EDITING && mixerUI){
+    userStartAudio();
+    return mixerUI.doubleClicked();
+  }
+}
+
+function mouseDragged(){
+  if(gameManager && gameManager.currentState === gameState.EDITING && mixerUI){
+    mixerUI.mouseDragged();
+  }
+}
+
+function mouseReleased(){
+  if(gameManager && gameManager.currentState === gameState.EDITING && mixerUI){
+    mixerUI.mouseReleased();
+  }
+}
+
+function mouseWheel(event){
+  if(gameManager && gameManager.currentState === gameState.EDITING && mixerUI && typeof mixerUI.mouseWheel === "function"){
+    return mixerUI.mouseWheel(event);
+  }
+}
+
+function initPostEditSystem(){
+  soundManager = new SoundManager();
+  soundManager.registerBgmOptions([{
+    ...postEditBgmConfig,
+    soundFile: postEditSoundFiles[postEditBgmConfig.id]
+  }]);
+  soundManager.collectMany(postEditSoundConfigs.map(config => ({
+    ...config,
+    soundFile: postEditSoundFiles[config.id]
+  })));
+  mixerUI = new MixerUI(soundManager);
+  document.addEventListener("contextmenu", event => {
+    if(gameManager && (gameManager.currentState === gameState.EDITING || gameManager.currentState === gameState.END)) event.preventDefault();
+  });
 }
