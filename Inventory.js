@@ -61,11 +61,14 @@ class Inventory {
             prefix = "> ";
         }
 
-        text(
-            `${prefix}${i + 1}. ${this.items[i].soundId}`,
-            x,
-            y + 30 + i * 20
-        );
+      const soundId = this.items[i].soundId;
+      const soundName = SOUND_LIBRARY[soundId]?.name || soundId;
+
+      text(
+      `${prefix}${i + 1}. ${soundName}`,
+      x,
+      y + 30 + i * 20
+      );
     }
 
     pop();

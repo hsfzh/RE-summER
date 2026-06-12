@@ -10,6 +10,12 @@ class GameObject{
     if(this.collidable) this.collider = new Collider(this, this.height, this.width);
     this.id = objects.length;
     this.isActive = true;
+
+    //soundobject의 경우 테두리를 그리기 위함
+    this.hasBorder = false;
+    this.borderColor = color(255);
+    this.borderWeight = 3;
+
     this.priority = _priority; // -1: 가장 뒤, 0: 기본, 1: 가장 앞
     switch(_priority){
         case -1:
@@ -37,6 +43,7 @@ class GameObject{
     }
   }
 
+<<<<<<< Updated upstream
   display(){
     if(this.img == null) return;
     if(!this.isActive) return;
@@ -47,18 +54,48 @@ class GameObject{
     translate(this.x, this.y);
     showImage(this.img, this.scale, 0, 0);
     pop();
+=======
+  display() {
+    if (!this.isActive) return;
+
+>>>>>>> Stashed changes
     // 충돌 판정 범위 시각화 코드 (디버깅용)
-    if(this.collidable && isDebugMode){
-        for(let colliderCircle of this.collider.circles){
+    if (this.collidable && isDebugMode) {
+        for (let colliderCircle of this.collider.circles) {
             push();
             fill(0, 255, 0, 100);
             stroke(0);
-            circle(colliderCircle.actualP.x, colliderCircle.actualP.y, 2*colliderCircle.r);
+            circle(
+                colliderCircle.actualP.x,
+                colliderCircle.actualP.y,
+                2 * colliderCircle.r
+            );
             pop();
         }
     }
-  }
+<<<<<<< Updated upstream
+=======
 
+    if (this.img == null) return;
+    push();
+    noSmooth();
+    translate(this.x, this.y);
+
+    // 아이콘 원형 테두리
+    stroke(255);        // 테두리 색
+    strokeWeight(4);    // 테두리 두께
+    noFill();
+
+    let diameter = max(this.width, this.height) + 8;
+    circle(0, 0, diameter);
+
+    // 아이콘 이미지
+    noStroke();
+    showImage(this.img, this.scale, 0, 0);
+
+    pop();
+>>>>>>> Stashed changes
+  }
   deactivate(){ this.isActive = false; }
   activate(){ this.isActive = true; }
 }

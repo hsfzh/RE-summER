@@ -43,6 +43,10 @@ let mapButtons = [];
 let images = {}; // 딕셔너리 형태 preload에서 images.player = loadImage 이렇게 새로운 변수 생성 없이 초기화
 let returnVideo;
 
+//soundManager
+let soundManager;
+let mixerUI;
+
 function preload(){
   images.player = [ //up, down, left, right
     loadImage("Resources/Images/player_back.png"),
@@ -71,11 +75,36 @@ function preload(){
   images.return[4] = loadImage("Resources/Images/return4.png");
   images.return[5] = loadImage("Resources/Images/return5.png");
 
-  SOUND_LIBRARY.water.icon = loadImage("Resources/Images/icons_outside.png");
-  SOUND_LIBRARY.water.audio = loadSound("Resources/Sounds/knock.mp3");
-  SOUND_LIBRARY.clock.icon = loadImage("Resources/Images/icons_kitchen.png");
-  SOUND_LIBRARY.clock.audio = loadSound("Resources/Sounds/ticktock.mp3");
 
+  SOUND_LIBRARY.bark.icon = loadImage("Resources/Images/icons/dog.png");
+  SOUND_LIBRARY.bark.audio = loadSound("Resources/Sounds/bark.m4a");
+ 
+  SOUND_LIBRARY.broom.icon = loadImage("Resources/Images/icons/broom.png");
+  SOUND_LIBRARY.broom.audio = loadSound("Resources/Sounds/broom.m4a");
+  
+  SOUND_LIBRARY.cricket.icon = loadImage("Resources/Images/icons/cricket.png");
+  SOUND_LIBRARY.cricket.audio = loadSound("Resources/Sounds/cricket.m4a");
+
+  SOUND_LIBRARY.fan.icon = loadImage("Resources/Images/icons/fan.png");
+  SOUND_LIBRARY.fan.audio = loadSound("Resources/Sounds/fan.m4a");
+  
+  SOUND_LIBRARY.meat.icon = loadImage("Resources/Images/icons/meat.png");
+  SOUND_LIBRARY.meat.audio = loadSound("Resources/Sounds/meat.m4a");
+
+  SOUND_LIBRARY.riverKid.icon = loadImage("Resources/Images/icons/river_kid.png");
+  SOUND_LIBRARY.riverKid.audio = loadSound("Resources/Sounds/river_kid.m4a");
+
+  SOUND_LIBRARY.splash.icon = loadImage("Resources/Images/icons/river.png");
+  SOUND_LIBRARY.splash.audio = loadSound("Resources/Sounds/splash.m4a");
+
+  SOUND_LIBRARY.stew.icon = loadImage("Resources/Images/icons/stew.png");
+  SOUND_LIBRARY.stew.audio = loadSound("Resources/Sounds/stew.m4a");
+ 
+  SOUND_LIBRARY.tv.icon = loadImage("Resources/Images/icons/tv.png");
+  SOUND_LIBRARY.tv.audio = loadSound("Resources/Sounds/tv.m4a");
+
+  SOUND_LIBRARY.wood.icon = loadImage("Resources/Images/icons/wood.png");
+  SOUND_LIBRARY.wood.audio = loadSound("Resources/Sounds/wood.m4a");
 }
 
 function setup() {
@@ -98,12 +127,23 @@ function setup() {
   // 안방씬
   // 부엌 씬
   // 마당 씬
-  initSceneObjects(); //SceneObjectLoader.js
+  initSceneObjects(player); //SceneObjectLoader.js
   returnVideo = createVideo("Resources/Videos/return.mp4");
   returnVideo.hide();
+
+  soundManager = new SoundManager();
+  mixerUI = new MixerUI(soundManager);
+  mixerUI.hideBpmInput();
+
+  
 }
 
 function draw() {
+  if (gameManager.currentState === gameState.EDITING) {
+    mixerUI.update();
+    return;
+  }
+  
   drawBackground(sceneNum);
   debugDraw(); // 디버깅용
   gameManager.update(deltaTime/1000);
@@ -115,6 +155,11 @@ function draw() {
 }
 
 function keyPressed(){
+  if (gameManager.currentState === gameState.EDITING) {
+    mixerUI.keyPressed();
+    return false;
+  }
+  
   if(keyCode == 84){
     isDebugMode = !isDebugMode;
     for(let button of debugButtons){
@@ -124,6 +169,11 @@ function keyPressed(){
 }
 
 function mousePressed(){
+  if (gameManager.currentState === gameState.EDITING) {
+    mixerUI.mousePressed();
+    return false;
+  }
+  
   for(let button of buttons){
     if(button.ishovering && button.show){
       button.performAction();
@@ -144,6 +194,7 @@ function changeScene(newSceneNum){
     callButton.changeShowState(player.hasVisitedAllMaps());
   }
 }
+
 function drawBackground(){
   // 배경 정리
   background(200);
@@ -171,4 +222,25 @@ function initBackgroundImage(){
   backgroundImage[scenes.OUTSIDE] = images.outside;
   backgroundImage[scenes.RETURN_CAR] = images.return[0];
   backgroundImage[scenes.CALLING] = images.calling;
+}
+
+function enterPostEditMode() {
+  soundManager.tracks = [];
+
+  for (let item of player.inventory.items) {
+    const soundId = item.soundId;
+    const data = SOUND_LIBRARY[soundId];
+
+    if (!data || !data.audio) continue;
+
+    soundManager.collect({
+      id: soundId,
+      name: data.name || soundId,
+      soundFile: data.audio,
+      sceneName: "",
+      color: [190, 130, 80]
+    });
+  }
+
+  gameManager.changeState(gameState.EDITING);
 }
