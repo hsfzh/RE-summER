@@ -39,6 +39,13 @@ class GameObject{
     this.y = constrain(this.y, this.height/2, height - this.height/2);
     this.updateCollider();
   }
+  moveTo(x, y){
+    this.x = x;
+    this.y = y;
+    this.x = constrain(this.x, this.width/2, width - this.width/2);
+    this.y = constrain(this.y, this.height/2, height - this.height/2);
+    this.updateCollider();
+  }
   updateCollider(){
     if(this.collidable){
         this.collider.updateWorldPosition();

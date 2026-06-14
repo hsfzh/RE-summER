@@ -76,6 +76,8 @@ class OutsideButton extends Button{
     performAction(){
         gameManager.changeState(gameState.PLAYING);
         player.visitedMap.OUTSIDE = true;
+        player.moveTo(width*3/7, height/3.5);
+        player.facing = player.directions.DOWN;
         changeScene(scenes.OUTSIDE);
     }
     display(){
@@ -93,6 +95,8 @@ class BedroomButton extends Button{
     performAction(){
         gameManager.changeState(gameState.PLAYING);
         player.visitedMap.BEDROOM = true;
+        player.moveTo(width/2, height * 0.9);
+        player.facing = player.directions.UP;
         changeScene(scenes.BEDROOM);
     }
     display(){
@@ -110,6 +114,8 @@ class KitchenButton extends Button{
     performAction(){
         gameManager.changeState(gameState.PLAYING);
         player.visitedMap.KITCHEN = true;
+        player.moveTo(width/5, height * 0.9);
+        player.facing = player.directions.UP;
         changeScene(scenes.KITCHEN);
     }
     display(){
@@ -127,6 +133,8 @@ class StreamButton extends Button{
     performAction(){
         gameManager.changeState(gameState.PLAYING);
         player.visitedMap.STREAM = true;
+        player.moveTo(width*4/11, height/3.5);
+        player.facing = player.directions.RIGHT;
         changeScene(scenes.STREAM);
     }
     display(){
@@ -223,6 +231,22 @@ class ToIntroButton extends Button{
         textAlign(CENTER, CENTER);
         fill(0);
         text("인트로 씬으로", 0, 0);
+        pop();
+    }
+}
+class ToMapSelectButton extends Button{
+  performAction(){
+        gameManager.changeState(gameState.MAP_SELECT);
+        changeScene(scenes.MAP_SELECT);
+    }
+    display(){
+        push();
+        translate(this.x, this.y);
+        rectMode(CENTER);
+        rect(0, 0, this.sizeX, this.sizeY);
+        textAlign(CENTER, CENTER);
+        fill(0);
+        text("맵 선택 씬으로", 0, 0);
         pop();
     }
 }
