@@ -159,18 +159,18 @@ function setup() {
   initBackgroundImage();
   sceneNum = 0;
   for(let i=0; i<totalSceneNum; i++) sceneObjects.push([]);
-  console.log(sceneObjects);
   // 씬 오브젝트 배치
   // 시냇가 씬
   // 안방씬
   // 부엌 씬
   // 마당 씬
-  initSceneObjects(player); //SceneObjectLoader.js
+  initSceneObjects(); //SceneObjectLoader.js
 
   // 영상 로딩
   videos.openingVideo1 = createVideo("Resources/Videos/opening1.mp4");
   videos.openingVideo2 = createVideo("Resources/Videos/opening2.mp4");
   videos.introVideo = createVideo("Resources/Videos/introVideo.mp4");
+  videos.callVideo = createVideo("Resources/Videos/afterCall.mp4");
   videos.returnVideo = createVideo("Resources/Videos/return.mp4");
   for (const video of Object.values(videos))
     video.hide();
@@ -225,6 +225,7 @@ function keyPressed(){
     for(let button of debugButtons){
       button.changeShowState(isDebugMode);
     }
+    callButton.changeShowState(isDebugMode);
   }
 }
 

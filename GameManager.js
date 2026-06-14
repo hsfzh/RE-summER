@@ -6,10 +6,6 @@ class GameManager{
             "엄마도 아직 귀뚜라미 소리만 들으면 옛날 시골집이 생각나.",
             "재미있게 놀고, 다 놀았으면 엄마한테 전화해~\n 엄마가 데리러 갈게."
         ];
-        this.callingText = [
-            "엄마, 이제 데리러 와",
-            "그래, 지금 갈게. 잠깐만 기다려."
-        ];
         this.returnText = [
             "…그 여름이 얼마나 오래된 일인지."
         ]
@@ -20,6 +16,7 @@ class GameManager{
         this.isOpening1VideoFinished = false;
         this.isOpening2VideoFinished = false;
         this.isIntroVideoFinished = false;
+        this.isCallVideoFinished = false;
         this.isReturnVideoFinished = false;
         this.isfading = false;
         this.fadeTimer = 0;
@@ -57,6 +54,11 @@ class GameManager{
             this.isIntroVideoFinished = false;
             videos.introVideo.stop();
             videos.introVideo.play();
+        }
+        if (this.currentState === gameState.CALLING) {
+            this.isCallVideoFinished = false;
+            videos.callVideo.stop();
+            videos.callVideo.play();
         }
         if (this.currentState === gameState.RETURN_CAR) {
             this.isReturnVideoFinished = false;
@@ -114,9 +116,9 @@ class GameManager{
                 break;
             default:
             case gameState.PLAYING:
-                this.updatePlaying(time);
                 break;
             }
+            this.updatePlaying(time);
         }
     }
     updateStart(time){
@@ -168,17 +170,33 @@ class GameManager{
     
     }
     updateCalling(time){
-        push();
-        fill(255);
-        stroke(0);
-        pop();
-        //showText(this.introText[this.textIndex], 30, color(0), width/2, height*0.825);
-        if(this.checkInput()){
-            this.textIndex += 1;
-            if(this.textIndex >= this.callingText.length){
-                this.changeState(gameState.RETURN_CAR);
-                changeScene(scenes.RETURN_CAR);
-                this.textIndex = 0;
+        if(this.textIndex < sceneObjects[scenes.CALLING].length){
+            for(let index = 0; index < sceneObjects[scenes.CALLING].length; index++){
+                if(index <= this.textIndex)
+                    sceneObjects[scenes.CALLING][index].activate();
+                else
+                    sceneObjects[scenes.CALLING][index].deactivate();
+            }
+            if(this.checkInput()){
+                this.textIndex += 1;
+                if(this.textIndex >= sceneObjects[scenes.CALLING].length)
+                    for(let object of sceneObjects[scenes.CALLING]) 
+                        object.deactivate();
+            }
+        }else{
+            if(!this.isCallVideoFinished){
+                if(videos.callVideo.time() >= videos.callVideo.duration() - 0.1){
+                    this.isCallVideoFinished = true;
+                    this.changeState(gameState.RETURN_CAR);
+                    changeScene(scenes.RETURN_CAR);
+                    this.textIndex = 0;
+                }else{
+                    if(!this.isfading){
+                        this.startFade(fadeTime, images.call_map);
+                    }else{
+                        showImage(videos.callVideo, 0, width/2, height/2);
+                    }
+                }
             }
         }
     }
@@ -192,10 +210,10 @@ class GameManager{
             showImage(videos.returnVideo, 0, width / 2, height / 2); 
             
             push();
-            fill(255);
+            fill(color(255, 239, 199));
             stroke(0);
             rectMode(CENTER);
-            rect(width / 2, height * 0.825, 600, 100);
+            rect(width / 2, height * 0.825, 600, 100, 20);
             pop();
 
             if (this.textIndex < this.returnText.length) {
@@ -214,16 +232,24 @@ class GameManager{
     }
     updatePlaying(time){
         for(let object of objects){
-          if(object.isActive) object.update(time);
+            if(!object.isActive) continue;
+            if(object === player && this.currentState !== gameState.PLAYING) continue;
+            object.update(time);
         }
         for(let object of backObjects){
-          if(object.isActive) object.display();
+            if(!object.isActive) continue;
+            if(object === player && this.currentState !== gameState.PLAYING) continue;
+            object.display();
         }
         for(let object of midObjects){
-          if(object.isActive) object.display();
+            if(!object.isActive) continue;
+            if(object === player && this.currentState !== gameState.PLAYING) continue;
+            object.display();
         }
         for(let object of frontObjects){
-          if(object.isActive) object.display();
+            if(!object.isActive) continue;
+            if(object === player && this.currentState !== gameState.PLAYING) continue;
+            object.display();
         }
     }
     updateEditing(time){

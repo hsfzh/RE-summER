@@ -156,4 +156,25 @@ function initSceneObjects(){
     sceneObjects[scenes.OUTSIDE].push(
         new CollisionObject(946,655,672,119)
     );
+
+    // 전화 씬
+    sceneObjects[scenes.CALLING].push(
+        new GameObject(width/2, height/2, images.call_phone, 1, false, 1)
+    )
+    sceneObjects[scenes.CALLING].push(
+        new GameObject(width*19/55, height*5/11, images.call_player, 1, false, 1)
+    )
+    sceneObjects[scenes.CALLING].push(
+        new GameObject(width*13/20, height*2/5, images.call_mom, 1, false, 1)
+    )
+
+    // 모든 오브젝트 추가 후 마지막에
+    ResetAllObjects();
+}
+
+function ResetAllObjects(){
+    for(let objects of sceneObjects){
+        for(let object of objects) 
+            object.deactivate();
+    }
 }

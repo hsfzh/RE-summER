@@ -2295,7 +2295,7 @@ MixerUI.prototype.mousePressedFinishScreen = function() {
     this.stopTransport(true);
     this.hideBpmInput();
     if(typeof gameManager !== "undefined" && gameManager && typeof gameManager.changeState === "function"){
-      gameManager.changeState(gameState.NONE);
+      gameManager.changeState(gameState.START);
     }
     if(typeof changeScene === "function" && typeof scenes !== "undefined"){
       changeScene(scenes.EMPTY);

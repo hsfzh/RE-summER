@@ -158,9 +158,15 @@ class MapButton extends Button{
         push();
         translate(this.x, this.y);
         rectMode(CENTER);
-        rect(0, 0, this.sizeX, this.sizeY);
+        fill(this.hover ? color(255, 216, 137) : color(255, 239, 199));
+        if(this.ishovering){
+            rect(0, 0, this.sizeX * 1.1, this.sizeY * 1.1, 16);
+        } else{
+            rect(0, 0, this.sizeX, this.sizeY, 16);
+        }
         textAlign(CENTER, CENTER);
-        fill(0);
+        textSize(this.ishovering? 17:14);
+        fill(58, 40, 26);
         text("지도 보기", 0, 0);
         pop();
     }
@@ -171,15 +177,14 @@ class CallButton extends Button{
         this.pressed = false;
     }
     performAction(){
-        gameManager.changeState(gameState.CALLING);
+        gameManager.startFade(fadeTime, images.map, gameState.CALLING);
         changeScene(scenes.CALLING);
-
         this.changeShowState(false);
     }
     display(){
         push();
         translate(this.x, this.y);
-        showImage(this.img, 0.5, 0, 0);
+        showImage(this.img, this.ishovering? 0.5 : 0.4, 0, 0);
         pop();
     }
     changeShowState(state){
