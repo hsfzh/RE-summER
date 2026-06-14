@@ -36,7 +36,7 @@ class Button{
 
 class StartButton extends Button{
     performAction(){
-        gameManager.startFade(5, images.start, gameState.INTRO);
+        gameManager.startFade(fadeTime, images.start, gameState.INTRO);
         changeScene(scenes.INTRO);
         this.changeShowState(false);
         tutorialButton.changeShowState(false);

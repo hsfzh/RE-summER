@@ -31,6 +31,7 @@ let scenes = { // 빈씬:0, 시냇가:1, 안방:2, 부엌:3, 마당:4, 인트로
   ENDING: 10
 };
 let totalSceneNum = 11; 
+let fadeTime = 3;
 // 객체들
 let startButton;
 let tutorialButton;
@@ -169,10 +170,10 @@ function setup() {
   // 영상 로딩
   videos.openingVideo1 = createVideo("Resources/Videos/opening1.mp4");
   videos.openingVideo2 = createVideo("Resources/Videos/opening2.mp4");
+  videos.introVideo = createVideo("Resources/Videos/introVideo.mp4");
   videos.returnVideo = createVideo("Resources/Videos/return.mp4");
-  videos.openingVideo1.hide();
-  videos.openingVideo2.hide();
-  videos.returnVideo.hide();
+  for (const video of Object.values(videos))
+    video.hide();
 
   initPostEditSystem();
 

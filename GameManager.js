@@ -2,8 +2,9 @@ class GameManager{
     constructor(){
         this.currentState = gameState.START;
         this.introText = [
-            "다 왔어, 곧 할머니 댁이야.",
-            "창문 열어봐, 이 냄새 좋지?"
+            "오랜만에 할머니댁 놀러가서 신나지?",
+            "엄마도 아직 귀뚜라미 소리만 들으면 옛날 시골집이 생각나.",
+            "재미있게 놀고, 다 놀았으면 엄마한테 전화해~\n 엄마가 데리러 갈게."
         ];
         this.callingText = [
             "엄마, 이제 데리러 와",
@@ -18,6 +19,7 @@ class GameManager{
         this.returnSceneTimer = 0;
         this.isOpening1VideoFinished = false;
         this.isOpening2VideoFinished = false;
+        this.isIntroVideoFinished = false;
         this.isReturnVideoFinished = false;
         this.isfading = false;
         this.fadeTimer = 0;
@@ -51,6 +53,11 @@ class GameManager{
             videos.openingVideo2.stop();
             videos.openingVideo1.play();
         }
+        if (this.currentState === gameState.INTRO) {
+            this.isIntroVideoFinished = false;
+            videos.introVideo.stop();
+            videos.introVideo.play();
+        }
         if (this.currentState === gameState.RETURN_CAR) {
             this.isReturnVideoFinished = false;
             videos.returnVideo.stop();
@@ -75,14 +82,12 @@ class GameManager{
         rect(0,0,width, height);
         pop();
         if(this.fadeTimer <= 0){
-            this.isfading = false;
             if(this.fadeExitState !== this.currentState) this.changeState(this.fadeExitState);
         }
     }
     update(time){
         if(this.inputTimer >= 0) this.inputTimer -= time;
-        if(this.isfading)
-        {
+        if(this.fadeTimer > 0){
             this.fadeout(time);
         } else{
             switch(this.currentState){
@@ -119,7 +124,7 @@ class GameManager{
             if(videos.openingVideo1.time() >= videos.openingVideo1.duration() - 0.1)
             {
                 this.isOpening1VideoFinished = true;
-                this.startFade(5, videos.openingVideo1);
+                this.startFade(fadeTime, videos.openingVideo1);
                 videos.openingVideo2.stop();
                 videos.openingVideo2.play();
             }
@@ -140,13 +145,22 @@ class GameManager{
         fill(255);
         stroke(0);
         pop();
-        showText(this.introText[this.textIndex], 30, color(0), width*0.48, height*0.86);
+        showText(this.introText[min(this.textIndex, this.introText.length - 1)], 26, color(0), width*0.48, height*0.86);
         if(this.checkInput()){
             this.textIndex += 1;
-            if(this.textIndex >= this.introText.length){
+        }
+        if(this.textIndex >= this.introText.length){
+            if(!this.isIntroVideoFinished && videos.introVideo.time() >= videos.introVideo.duration() - 0.1){
+                this.isIntroVideoFinished = true;
                 this.changeState(gameState.MAP_SELECT);
                 changeScene(scenes.MAP_SELECT);
                 this.textIndex = 0;
+            }else{
+                if(!this.isfading){
+                    this.startFade(fadeTime, images.introBackground);
+                } else {
+                    showImage(videos.introVideo, 0, width/2, height/2);
+                }
             }
         }
     }
