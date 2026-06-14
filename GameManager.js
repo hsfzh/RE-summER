@@ -153,10 +153,10 @@ class GameManager{
         }
     }
     updateEditing(time){
-
+        if(typeof mixerUI !== "undefined" && mixerUI) mixerUI.update(time);
     }
     updateEnd(time){
-
+        if(typeof mixerUI !== "undefined" && mixerUI && typeof mixerUI.updateFinishScreen === "function") mixerUI.updateFinishScreen(time);
     }
     checkInput(){
         if(this.inputTimer > 0) return false;
