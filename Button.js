@@ -158,7 +158,7 @@ class MapButton extends Button{
         push();
         translate(this.x, this.y);
         rectMode(CENTER);
-        fill(this.hover ? color(255, 216, 137) : color(255, 239, 199));
+        fill(this.ishovering ? color(255, 216, 137) : color(255, 239, 199));
         if(this.ishovering){
             rect(0, 0, this.sizeX * 1.1, this.sizeY * 1.1, 16);
         } else{
@@ -175,21 +175,106 @@ class CallButton extends Button{
     constructor(_x, _y, _sizeX, _sizeY, _img){
         super(_x, _y, _sizeX, _sizeY, _img);
         this.pressed = false;
+        this.enter = false;
+        this.yesButton = new CallYesButton(width/2 - 75, height*4/7, 100, 50, null, this);
+        this.noButton = new CallNoButton(width/2 + 75, height*4/7, 100, 50, null, this);
     }
     performAction(){
-        gameManager.startFade(fadeTime, images.map, gameState.CALLING);
-        changeScene(scenes.CALLING);
-        this.changeShowState(false);
+        if(!this.enter) {
+            this.enter = true;
+            this.yesButton.changeShowState(true);
+            this.noButton.changeShowState(true);
+        }
     }
     display(){
         push();
         translate(this.x, this.y);
         showImage(this.img, this.ishovering? 0.5 : 0.4, 0, 0);
         pop();
+        if(this.enter){
+            push();
+            rectMode(CENTER);
+            fill(0, 150);
+            rect(width/2, height/2, width, height);
+            fill(200, 185, 145);
+            rect(width/2, height/2, 400, 250, 20);
+            fill(0);
+            fill(58, 40, 26);
+            textAlign(CENTER, CENTER);
+            textSize(20);
+            textStyle(BOLD);
+            text("엄마한테 데리러 오라고 할까?", width/2, height*4/9);
+            textSize(15);
+            text("(예를 누르면 다음 씬으로 이동합니다)", width/2, height*4.35/9);
+            pop();
+        }
     }
     changeShowState(state){
-        if(this.pressed) this.show = false;
-        else super.changeShowState(state);
+        if(this.pressed){
+            this.show = false;
+            this.yesButton.changeShowState(false);
+            this.noButton.changeShowState(false);
+        }else{
+            this.show = state;
+            this.yesButton.changeShowState(false);
+            this.noButton.changeShowState(false);
+        }
+    }
+}
+class CallYesButton extends Button{
+    constructor(_x, _y, _sizeX, _sizeY, _img, _parent){
+        super(_x, _y, _sizeX, _sizeY, _img);
+        this.parent = _parent;
+    }
+    performAction(){
+        gameManager.startFade(fadeTime, images.map, gameState.CALLING);
+        changeScene(scenes.CALLING);
+        this.parent.enter = false;
+        this.parent.pressed = true;
+        this.parent.changeShowState(false);
+    }
+    display(){
+        push();
+        translate(this.x, this.y);
+        rectMode(CENTER);
+        fill(this.ishovering ? color(255, 216, 137) : color(255, 239, 199));
+        if(this.ishovering){
+            rect(0, 0, this.sizeX * 1.1, this.sizeY * 1.1, 16);
+        }else{
+            rect(0, 0, this.sizeX, this.sizeY, 16);
+        }
+        textAlign(CENTER, CENTER);
+        fill(0);
+        textSize(this.ishovering? 15:12);
+        text("예", 0, 0);
+        pop();
+    }
+}
+class CallNoButton extends Button{
+    constructor(_x, _y, _sizeX, _sizeY, _img, _parent){
+        super(_x, _y, _sizeX, _sizeY, _img);
+        this.parent = _parent;
+    }
+    performAction(){
+        this.parent.enter = false;
+        this.parent.yesButton.changeShowState(false);
+        this.changeShowState(false);
+    }
+    display(){
+        push();
+        translate(this.x, this.y);
+        rectMode(CENTER);
+        fill(this.ishovering ? color(255, 216, 137) : color(255, 239, 199));
+        if(this.ishovering){
+            rect(0, 0, this.sizeX * 1.1, this.sizeY * 1.1, 16);
+        }else{
+            rect(0, 0, this.sizeX, this.sizeY, 16);
+        }
+        textAlign(CENTER, CENTER);
+        fill(0);
+        textSize(this.ishovering? 15:12);
+        text("아니오", 0, 0);
+        pop();
     }
 }
 
