@@ -2,7 +2,11 @@ function initSceneObjects(){
 
     // 시냇가
     sceneObjects[scenes.STREAM].push(
-        new SoundObject(400,600,"water")
+        new SoundObject(400,600,"splash", player)
+    );
+
+    sceneObjects[scenes.STREAM].push(
+        new SoundObject(800,400,"riverKid", player, 1.5)
     );
 
     // 벽 및 장애물
@@ -38,6 +42,14 @@ function initSceneObjects(){
     );
 
     // 안방
+    sceneObjects[scenes.BEDROOM].push(
+        new SoundObject(1000,350,"tv",player)
+    );
+
+    sceneObjects[scenes.BEDROOM].push(
+        new SoundObject(250,250,"fan",player)
+    );
+
     // 벽 및 장애물
     sceneObjects[scenes.BEDROOM].push(
         new CollisionObject(width/2,75,946,150)
@@ -66,7 +78,11 @@ function initSceneObjects(){
 
     //부엌
     sceneObjects[scenes.KITCHEN].push(
-        new SoundObject(400,600,"clock")
+        new SoundObject(400,600,"stew",player)
+    );
+
+    sceneObjects[scenes.KITCHEN].push(
+        new SoundObject(350,400,"meat",player)
     );
 
     // 벽 및 장애물
@@ -93,6 +109,13 @@ function initSceneObjects(){
     );
 
     // 마당
+     sceneObjects[scenes.OUTSIDE].push(
+        new SoundObject(300,400,"bark",player)
+    );
+
+    sceneObjects[scenes.OUTSIDE].push(
+        new SoundObject(850,400,"broom",player)
+    );
     // 벽 및 장애물
     sceneObjects[scenes.OUTSIDE].push(
         new CollisionObject(width/2,65,width,130)

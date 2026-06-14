@@ -43,8 +43,6 @@ let mapButtons = [];
 let images = {}; // 딕셔너리 형태 preload에서 images.player = loadImage 이렇게 새로운 변수 생성 없이 초기화
 let returnVideo;
 
-let soundManager;
-let mixerUI;
 let postEditSoundFiles = {};
 const postEditBgmConfig = { id: "main_bgm_source", name: "MAIN BGM", sceneName: "MAIN", file: "Resources/Sounds/final/main_bgm.mp3", color: [86, 132, 210], volume: 0.26, masterVolume: 0.78, lowPassFreq: 9200, reverbWet: 0.06 };
 const postEditSoundConfigs = [
@@ -64,6 +62,9 @@ const postEditSoundConfigs = [
   { id: "water_splash", name: "물 첨벙", sceneName: "시냇가", file: "Resources/Sounds/final/water_splash.m4a", color: [88, 175, 215], volume: 0.98, lowPassFreq: 9000, reverbWet: 0.08 },
   { id: "grilling_meat", name: "고기 굽기", sceneName: "부엌", file: "Resources/Sounds/final/grilling_meat.m4a", color: [193, 92, 55], volume: 0.94, lowPassFreq: 7200 }
 ];
+//soundManager
+let soundManager;
+let mixerUI;
 
 function preload(){
   soundFormats("mp3", "m4a", "wav", "ogg");
@@ -104,6 +105,35 @@ function preload(){
     postEditSoundFiles[config.id] = loadSound(config.file);
   }
 
+  SOUND_LIBRARY.bark.icon = loadImage("Resources/Images/icons/dog.png");
+  SOUND_LIBRARY.bark.audio = loadSound("Resources/Sounds/bark.m4a");
+ 
+  SOUND_LIBRARY.broom.icon = loadImage("Resources/Images/icons/broom.png");
+  SOUND_LIBRARY.broom.audio = loadSound("Resources/Sounds/broom.m4a");
+  
+  SOUND_LIBRARY.cricket.icon = loadImage("Resources/Images/icons/cricket.png");
+  SOUND_LIBRARY.cricket.audio = loadSound("Resources/Sounds/cricket.m4a");
+
+  SOUND_LIBRARY.fan.icon = loadImage("Resources/Images/icons/fan.png");
+  SOUND_LIBRARY.fan.audio = loadSound("Resources/Sounds/fan.m4a");
+  
+  SOUND_LIBRARY.meat.icon = loadImage("Resources/Images/icons/meat.png");
+  SOUND_LIBRARY.meat.audio = loadSound("Resources/Sounds/meat.m4a");
+
+  SOUND_LIBRARY.riverKid.icon = loadImage("Resources/Images/icons/river_kid.png");
+  SOUND_LIBRARY.riverKid.audio = loadSound("Resources/Sounds/river_kid.m4a");
+
+  SOUND_LIBRARY.splash.icon = loadImage("Resources/Images/icons/river.png");
+  SOUND_LIBRARY.splash.audio = loadSound("Resources/Sounds/splash.m4a");
+
+  SOUND_LIBRARY.stew.icon = loadImage("Resources/Images/icons/stew.png");
+  SOUND_LIBRARY.stew.audio = loadSound("Resources/Sounds/stew.m4a");
+ 
+  SOUND_LIBRARY.tv.icon = loadImage("Resources/Images/icons/tv.png");
+  SOUND_LIBRARY.tv.audio = loadSound("Resources/Sounds/tv.m4a");
+
+  SOUND_LIBRARY.wood.icon = loadImage("Resources/Images/icons/wood.png");
+  SOUND_LIBRARY.wood.audio = loadSound("Resources/Sounds/wood.m4a");
 }
 
 function setup() {
@@ -129,9 +159,10 @@ function setup() {
   // 안방씬
   // 부엌 씬
   // 마당 씬
-  initSceneObjects(); //SceneObjectLoader.js
+  initSceneObjects(player); //SceneObjectLoader.js
   returnVideo = createVideo("Resources/Videos/return.mp4");
   returnVideo.hide();
+
   initPostEditSystem();
 }
 
@@ -140,6 +171,17 @@ function draw() {
     gameManager.update(deltaTime/1000);
     return;
   }
+  soundManager = new SoundManager();
+  mixerUI = new MixerUI(soundManager);
+  mixerUI.hideBpmInput();
+}
+
+function draw() {
+  if (gameManager.currentState === gameState.EDITING) {
+    mixerUI.update();
+    return;
+  }
+
   drawBackground(sceneNum);
   debugDraw(); // 디버깅용
   gameManager.update(deltaTime/1000);
@@ -159,6 +201,10 @@ function keyPressed(){
     userStartAudio();
     return false;
   }
+  if (gameManager.currentState === gameState.EDITING) {
+    mixerUI.keyPressed();
+    return false;
+  }
   if(keyCode == 84){
     isDebugMode = !isDebugMode;
     for(let button of debugButtons){
@@ -176,6 +222,12 @@ function mousePressed(){
     userStartAudio();
     return mixerUI.mousePressedFinishScreen();
   }
+
+  if (gameManager.currentState === gameState.EDITING) {
+    mixerUI.mousePressed();
+    return false;
+  }
+  
   for(let button of buttons){
     if(button.ishovering && button.show){
       button.performAction();
@@ -196,6 +248,7 @@ function changeScene(newSceneNum){
     callButton.changeShowState(player.hasVisitedAllMaps());
   }
 }
+
 function drawBackground(){
   // 배경 정리
   background(200);
@@ -264,4 +317,25 @@ function initPostEditSystem(){
   document.addEventListener("contextmenu", event => {
     if(gameManager && (gameManager.currentState === gameState.EDITING || gameManager.currentState === gameState.END)) event.preventDefault();
   });
+}
+
+function enterPostEditMode() {
+  soundManager.tracks = [];
+
+  for (let item of player.inventory.items) {
+    const soundId = item.soundId;
+    const data = SOUND_LIBRARY[soundId];
+
+    if (!data || !data.audio) continue;
+
+    soundManager.collect({
+      id: soundId,
+      name: data.name || soundId,
+      soundFile: data.audio,
+      sceneName: "",
+      color: [190, 130, 80]
+    });
+  }
+
+  gameManager.changeState(gameState.EDITING);
 }
