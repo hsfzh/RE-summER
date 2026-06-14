@@ -1,7 +1,7 @@
 function showImage(img, scale, x, y){
   imageMode(CENTER);
   if(img==null||img===undefined){
-    console.log("이미지 없음");
+    //console.trace("이미지 없음:", img);
     return;
   }
   if(scale == 0)
@@ -9,7 +9,6 @@ function showImage(img, scale, x, y){
     let xScale = width/img.width;
     let yScale = height/img.height;
     scale = min(xScale, yScale);
-    console.log(`화면 해상도: ${img.width*scale} x ${img.height*scale}`);
   }
   image(img, x, y, img.width*scale, img.height*scale);
 }

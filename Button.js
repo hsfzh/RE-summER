@@ -22,6 +22,10 @@ class Button{
                 this.ishovering = false;
             }
     }
+    move(x, y){
+        this.x = x;
+        this.y = y;
+    }
     performAction() {
         throw new Error("performAction() 메서드를 구현해야 합니다.");
     }
@@ -32,19 +36,40 @@ class Button{
 
 class StartButton extends Button{
     performAction(){
-        gameManager.changeState(gameState.INTRO);
+        gameManager.startFade(5, images.start, gameState.INTRO);
         changeScene(scenes.INTRO);
         this.changeShowState(false);
+        tutorialButton.changeShowState(false);
+        player.reset();
     }
     display(){
-        push();
-        translate(this.x, this.y);
-        rectMode(CENTER);
-        rect(0, 0, this.sizeX, this.sizeY);
-        textAlign(CENTER, CENTER);
-        fill(0);
-        text("게임 시작", 0, 0);
-        pop();
+        //push();
+        //translate(this.x, this.y);
+        //rectMode(CENTER);
+        //rect(0, 0, this.sizeX, this.sizeY);
+        //textAlign(CENTER, CENTER);
+        //fill(0);
+        //text("게임 시작", 0, 0);
+        //pop();
+    }
+}
+class TutorialButton extends Button{
+    performAction(){
+        //gameManager.changeState(gameState.INTRO);
+        //changeScene(scenes.INTRO);
+        //this.changeShowState(false);
+        //startButton.changeShowState(false);
+        //player.reset();
+    }
+    display(){
+        //push();
+        //translate(this.x, this.y);
+        //rectMode(CENTER);
+        //rect(0, 0, this.sizeX, this.sizeY);
+        //textAlign(CENTER, CENTER);
+        //fill(0);
+        //text("설명 보기", 0, 0);
+        //pop();
     }
 }
 class OutsideButton extends Button{
@@ -140,16 +165,12 @@ class CallButton extends Button{
     performAction(){
         gameManager.changeState(gameState.CALLING);
         changeScene(scenes.CALLING);
+
         this.changeShowState(false);
     }
     display(){
         push();
         translate(this.x, this.y);
-        //rectMode(CENTER);
-        //rect(0, 0, this.sizeX, this.sizeY);
-        //textAlign(CENTER, CENTER);
-        //fill(0);
-        //text("엄마에게 전화하기", 0, 0);
         showImage(this.img, 0.5, 0, 0);
         pop();
     }
@@ -173,7 +194,9 @@ function activateAllButtons(){
 //#region 디버깅 버튼
 class ToStartButton extends Button{
   performAction(){
-        gameManager.changeState(gameState.NONE);
+        gameManager.changeState(gameState.START);
+        gameManager.isOpening1VideoFinished = true;
+        gameManager.isOpening2VideoFinished = true;
         changeScene(scenes.EMPTY);
     }
     display(){

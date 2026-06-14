@@ -1,6 +1,6 @@
 class GameManager{
     constructor(){
-        this.currentState = gameState.NONE;
+        this.currentState = gameState.START;
         this.introText = [
             "다 왔어, 곧 할머니 댁이야.",
             "창문 열어봐, 이 냄새 좋지?"
@@ -16,7 +16,14 @@ class GameManager{
         this.inputTimer = 0.3;
         this.inputInterval = 0.3;
         this.returnSceneTimer = 0;
-        this.isVideoFinished = false;
+        this.isOpening1VideoFinished = false;
+        this.isOpening2VideoFinished = false;
+        this.isReturnVideoFinished = false;
+        this.isfading = false;
+        this.fadeTimer = 0;
+        this.fadeTime = 0;
+        this.fadeImage = null;
+        this.fadeExitState;
     }
     changeState(newState){
         this.currentState = newState;
@@ -34,21 +41,56 @@ class GameManager{
                 mapButton.changeShowState(true);
             }
         }
-        if(this.currentState === gameState.NONE) 
-            startButton.changeShowState(true);
-        else 
+        if(this.currentState === gameState.START) 
+        {
             startButton.changeShowState(false);
+            tutorialButton.changeShowState(false);
+            this.isOpening1VideoFinished = false;
+            this.isOpening2VideoFinished = false;
+            videos.openingVideo1.stop();
+            videos.openingVideo2.stop();
+            videos.openingVideo1.play();
+        }
         if (this.currentState === gameState.RETURN_CAR) {
-            this.isVideoFinished = false;
-            returnVideo.stop();
-            returnVideo.play();
+            this.isReturnVideoFinished = false;
+            videos.returnVideo.stop();
+            videos.returnVideo.play();
+        }
+    }
+    startFade(time, img = null, nextState = this.currentState){
+        this.isfading = true;
+        this.fadeTime = time;
+        this.fadeTimer = this.fadeTime;
+        this.fadeImage = img;
+        this.fadeExitState = nextState;
+    }
+    fadeout(time){
+        this.fadeTimer -= time;
+        if(this.fadeImage)
+            showImage(this.fadeImage, 0, width/2, height/2);
+        push();
+        rectMode(CENTER);
+        translate(width/2, height/2);
+        fill(0, map(this.fadeTimer, 0, this.fadeTime, 255, 0));
+        rect(0,0,width, height);
+        pop();
+        if(this.fadeTimer <= 0){
+            this.isfading = false;
+            if(this.fadeExitState !== this.currentState) this.changeState(this.fadeExitState);
         }
     }
     update(time){
         if(this.inputTimer >= 0) this.inputTimer -= time;
-        switch(this.currentState){
-            case gameState.INTRO:
+        if(this.isfading)
+        {
+            this.fadeout(time);
+        } else{
+            switch(this.currentState){
+            case gameState.START:
                 this.updateStart(time);
+                break;
+            case gameState.INTRO:
+                this.updateIntro(time);
                 break;
             case gameState.MAP_SELECT:
                 this.updateMapUI(time);
@@ -65,22 +107,40 @@ class GameManager{
             case gameState.END:
                 this.updateEnd(time);
                 break;
-            case gameState.NONE:
-                break;
             default:
             case gameState.PLAYING:
                 this.updatePlaying(time);
                 break;
+            }
         }
     }
     updateStart(time){
+        if (!this.isOpening1VideoFinished) {
+            if(videos.openingVideo1.time() >= videos.openingVideo1.duration() - 0.1)
+            {
+                this.isOpening1VideoFinished = true;
+                this.startFade(5, videos.openingVideo1);
+                videos.openingVideo2.stop();
+                videos.openingVideo2.play();
+            }
+            showImage(videos.openingVideo1, 0, width / 2, height / 2);
+        } else if(!this.isOpening2VideoFinished){
+            if(videos.openingVideo2.time() >= videos.openingVideo2.duration() - 0.1)
+                this.isOpening2VideoFinished = true;
+            showImage(videos.openingVideo2, 0, width / 2, height / 2);
+        }
+        else {
+            startButton.changeShowState(true);
+            tutorialButton.changeShowState(true);
+            showImage(images.start, 0, width / 2, height / 2); 
+        }
+    }
+    updateIntro(time){
         push();
         fill(255);
         stroke(0);
-        rectMode(CENTER);
-        rect(width*0.48, height*0.85, 600, 120);
         pop();
-        showText(this.introText[this.textIndex], 30, color(0), width*0.48, height*0.85);
+        showText(this.introText[this.textIndex], 30, color(0), width*0.48, height*0.86);
         if(this.checkInput()){
             this.textIndex += 1;
             if(this.textIndex >= this.introText.length){
@@ -109,13 +169,13 @@ class GameManager{
         }
     }
     updateReturnScene(time){
-        if (!this.isVideoFinished && returnVideo.time() >= returnVideo.duration() - 0.1) {
-            this.isVideoFinished = true;
+        if (!this.isReturnVideoFinished && videos.returnVideo.time() >= videos.returnVideo.duration() - 0.1) {
+            this.isReturnVideoFinished = true;
         }
-        if (!this.isVideoFinished) {
-            showImage(returnVideo, 0, width / 2, height / 2);
+        if (!this.isReturnVideoFinished) {
+            showImage(videos.returnVideo, 0, width / 2, height / 2);
         } else {
-            showImage(returnVideo, 0, width / 2, height / 2); 
+            showImage(videos.returnVideo, 0, width / 2, height / 2); 
             
             push();
             fill(255);

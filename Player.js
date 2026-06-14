@@ -205,4 +205,13 @@ class Player extends GameObject{
     hasVisitedAllMaps(){
         return Object.values(this.visitedMap).every(value => value === true);
     }
+    reset(){
+        for (let key in this.visitedMap) {
+            this.visitedMap[key] = false;
+        }
+
+        // 6. [인벤토리 연동] 인벤토리 비우기 및 UI 닫기
+        this.inventory = new Inventory(); 
+        this.showInventory = false;
+    }
 }
