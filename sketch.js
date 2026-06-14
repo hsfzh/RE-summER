@@ -73,6 +73,7 @@ function preload(){
   soundFormats("mp3", "m4a", "wav", "ogg");
   // 시작화면
   images.start = loadImage("Resources/Images/opening.png");
+  images.tutorial = loadImage("Resources/Images/tutorial.png");
   // 플레이어
   images.player = [ //up, down, left, right
     loadImage("Resources/Images/player/player_back.png"),
@@ -172,6 +173,7 @@ function setup() {
   videos.introVideo = createVideo("Resources/Videos/introVideo.mp4");
   videos.callVideo = createVideo("Resources/Videos/afterCall.mp4");
   videos.returnVideo = createVideo("Resources/Videos/return.mp4");
+  videos.returnVideo2 = createVideo("Resources/Videos/return2.mp4");
   for (const video of Object.values(videos))
     video.hide();
 

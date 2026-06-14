@@ -46,30 +46,38 @@ class StartButton extends Button{
         //push();
         //translate(this.x, this.y);
         //rectMode(CENTER);
-        //rect(0, 0, this.sizeX, this.sizeY);
-        //textAlign(CENTER, CENTER);
-        //fill(0);
-        //text("게임 시작", 0, 0);
+        //rect(0,0, 150, 60);
         //pop();
     }
 }
 class TutorialButton extends Button{
+    constructor(_x, _y, _sizeX, _sizeY, _img){
+        super(_x, _y, _sizeX, _sizeY, _img);
+        this.pressed = false;
+        this.startButton = new StartButton(width/2, height * 0.91, 150, 60);
+    }
     performAction(){
-        //gameManager.changeState(gameState.INTRO);
-        //changeScene(scenes.INTRO);
-        //this.changeShowState(false);
-        //startButton.changeShowState(false);
-        //player.reset();
+        if(!this.pressed){
+            this.pressed = true;
+            startButton.changeShowState(false);
+            this.startButton.changeShowState(true);
+        }
     }
     display(){
-        //push();
-        //translate(this.x, this.y);
-        //rectMode(CENTER);
-        //rect(0, 0, this.sizeX, this.sizeY);
-        //textAlign(CENTER, CENTER);
-        //fill(0);
-        //text("설명 보기", 0, 0);
-        //pop();
+        if(this.pressed){
+            showImage(images.tutorial, 0, width/2, height/2);
+        }else{
+            //push();
+            //translate(this.x, this.y);
+            //rectMode(CENTER);
+            //rect(0,0, 100, 50);
+            //pop();
+        }
+    }
+    changeShowState(state){
+        super.changeShowState(state);
+        this.pressed = false;
+        this.startButton.changeShowState(false);
     }
 }
 class OutsideButton extends Button{

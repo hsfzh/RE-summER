@@ -17,7 +17,8 @@ class GameManager{
         this.isOpening2VideoFinished = false;
         this.isIntroVideoFinished = false;
         this.isCallVideoFinished = false;
-        this.isReturnVideoFinished = false;
+        this.isReturnVideo1Finished = false;
+        this.isReturnVideo2Finished = false;
         this.isfading = false;
         this.fadeTimer = 0;
         this.fadeTime = 0;
@@ -47,21 +48,19 @@ class GameManager{
             this.isOpening1VideoFinished = false;
             this.isOpening2VideoFinished = false;
             videos.openingVideo1.stop();
-            videos.openingVideo2.stop();
             videos.openingVideo1.play();
         }
         if (this.currentState === gameState.INTRO) {
             this.isIntroVideoFinished = false;
             videos.introVideo.stop();
-            videos.introVideo.play();
         }
         if (this.currentState === gameState.CALLING) {
             this.isCallVideoFinished = false;
             videos.callVideo.stop();
-            videos.callVideo.play();
         }
         if (this.currentState === gameState.RETURN_CAR) {
-            this.isReturnVideoFinished = false;
+            this.isReturnVideo1Finished = false;
+            this.isReturnVideo2Finished = false;
             videos.returnVideo.stop();
             videos.returnVideo.play();
         }
@@ -114,7 +113,6 @@ class GameManager{
             case gameState.END:
                 this.updateEnd(time);
                 break;
-            default:
             case gameState.PLAYING:
                 break;
             }
@@ -132,13 +130,14 @@ class GameManager{
             }
             showImage(videos.openingVideo1, 0, width / 2, height / 2);
         } else if(!this.isOpening2VideoFinished){
-            if(videos.openingVideo2.time() >= videos.openingVideo2.duration() - 0.1)
+            if(videos.openingVideo2.time() >= videos.openingVideo2.duration() - 0.1){
+                startButton.changeShowState(true);
+                tutorialButton.changeShowState(true);
                 this.isOpening2VideoFinished = true;
+            }
             showImage(videos.openingVideo2, 0, width / 2, height / 2);
         }
         else {
-            startButton.changeShowState(true);
-            tutorialButton.changeShowState(true);
             showImage(images.start, 0, width / 2, height / 2); 
         }
     }
@@ -150,11 +149,14 @@ class GameManager{
         showText(this.introText[min(this.textIndex, this.introText.length - 1)], 26, color(0), width*0.48, height*0.86);
         if(this.checkInput()){
             this.textIndex += 1;
+            if(this.textIndex==this.introText.length){
+                videos.introVideo.play();
+            }
         }
         if(this.textIndex >= this.introText.length){
             if(!this.isIntroVideoFinished && videos.introVideo.time() >= videos.introVideo.duration() - 0.1){
                 this.isIntroVideoFinished = true;
-                this.changeState(gameState.MAP_SELECT);
+                this.startFade(this.fadeTime, videos.introVideo, gameState.MAP_SELECT);
                 changeScene(scenes.MAP_SELECT);
                 this.textIndex = 0;
             }else{
@@ -179,9 +181,11 @@ class GameManager{
             }
             if(this.checkInput()){
                 this.textIndex += 1;
-                if(this.textIndex >= sceneObjects[scenes.CALLING].length)
+                if(this.textIndex == sceneObjects[scenes.CALLING].length){
                     for(let object of sceneObjects[scenes.CALLING]) 
                         object.deactivate();
+                    videos.callVideo.play();
+                }
             }
         }else{
             if(!this.isCallVideoFinished){
@@ -201,33 +205,23 @@ class GameManager{
         }
     }
     updateReturnScene(time){
-        if (!this.isReturnVideoFinished && videos.returnVideo.time() >= videos.returnVideo.duration() - 0.1) {
-            this.isReturnVideoFinished = true;
+        if (!this.isReturnVideo1Finished && videos.returnVideo.time() >= videos.returnVideo.duration() - 0.1) {
+            this.isReturnVideo1Finished = true;
+            this.startFade(this.fadeTime, videos.returnVideo);
+            videos.returnVideo2.stop();
+            videos.returnVideo2.play();
         }
-        if (!this.isReturnVideoFinished) {
+        if (!this.isReturnVideo2Finished && videos.returnVideo2.time() >= videos.returnVideo2.duration() - 0.1) {
+            this.isReturnVideo2Finished = true;
+        }
+        if (!this.isReturnVideo1Finished) {
             showImage(videos.returnVideo, 0, width / 2, height / 2);
-        } else {
-            showImage(videos.returnVideo, 0, width / 2, height / 2); 
-            
-            push();
-            fill(color(255, 239, 199));
-            stroke(0);
-            rectMode(CENTER);
-            rect(width / 2, height * 0.825, 600, 100, 20);
-            pop();
-
-            if (this.textIndex < this.returnText.length) {
-                showText(this.returnText[this.textIndex], 25, color(0), width / 2, height * 0.825);
-            }
-
-            if (this.checkInput()) {
-                this.textIndex += 1;
-                if (this.textIndex >= this.returnText.length) {
-                    this.changeState(gameState.EDITING);
-                    changeScene(scenes.EDIT_SCENE);
-                    this.textIndex = 0;
-                }
-            }
+        } else if (!this.isReturnVideo2Finished){
+            showImage(videos.returnVideo2, 0, width/2, height/2);
+        }
+        else {
+            this.startFade(this.fadeTime, videos.returnVideo2, gameState.EDITING);
+            changeScene(scenes.EDIT_SCENE);
         }
     }
     updatePlaying(time){
