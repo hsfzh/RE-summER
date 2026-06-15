@@ -3,6 +3,137 @@ const POST_EDIT_MAX_TIMELINE_SECONDS = 240;
 const POST_EDIT_SNAP_DIVISION = 4; 
 const POST_EDIT_FALLBACK_CLIP_SECONDS = 2.0;
 
+let POST_EDIT_MASTER_BUS = null;
+
+function createPostEditReverbImpulse(context){
+  const duration = 1.15;
+  const length = Math.max(1, Math.floor(context.sampleRate * duration));
+  const impulse = context.createBuffer(2, length, context.sampleRate);
+  for(let channel = 0; channel < impulse.numberOfChannels; channel++){
+    const data = impulse.getChannelData(channel);
+    for(let i = 0; i < length; i++){
+      const envelope = Math.pow(1 - i / length, 2.6);
+      data[i] = (Math.random() * 2 - 1) * envelope;
+    }
+  }
+  return impulse;
+}
+
+function getPostEditMasterBus(){
+  if(POST_EDIT_MASTER_BUS) return POST_EDIT_MASTER_BUS;
+
+  try{
+    const context = typeof getAudioContext === "function" ? getAudioContext() : null;
+    if(!context) return null;
+
+    const input = context.createGain();
+    const compressor = context.createDynamicsCompressor();
+    const limiter = context.createDynamicsCompressor();
+
+    input.gain.value = 0.72;
+    compressor.threshold.value = -20;
+    compressor.knee.value = 24;
+    compressor.ratio.value = 4;
+    compressor.attack.value = 0.006;
+    compressor.release.value = 0.22;
+
+    limiter.threshold.value = -2.5;
+    limiter.knee.value = 0;
+    limiter.ratio.value = 20;
+    limiter.attack.value = 0.001;
+    limiter.release.value = 0.08;
+
+    const delayInput = context.createGain();
+    const delayNode = context.createDelay(2.0);
+    const delayFeedback = context.createGain();
+    const delayOutput = context.createGain();
+    delayNode.delayTime.value = 0.22;
+    delayFeedback.gain.value = 0.18;
+    delayOutput.gain.value = 0.42;
+
+    const reverbInput = context.createGain();
+    const convolver = context.createConvolver();
+    const reverbOutput = context.createGain();
+    convolver.buffer = createPostEditReverbImpulse(context);
+    reverbOutput.gain.value = 0.38;
+
+    input.connect(compressor);
+    compressor.connect(limiter);
+    limiter.connect(context.destination);
+
+    delayInput.connect(delayNode);
+    delayNode.connect(delayFeedback);
+    delayFeedback.connect(delayNode);
+    delayNode.connect(delayOutput);
+    delayOutput.connect(input);
+
+    reverbInput.connect(convolver);
+    convolver.connect(reverbOutput);
+    reverbOutput.connect(input);
+
+    POST_EDIT_MASTER_BUS = {
+      context,
+      input,
+      compressor,
+      limiter,
+      delayInput,
+      reverbInput
+    };
+    return POST_EDIT_MASTER_BUS;
+  } catch(error){
+    console.warn("후편집 마스터 오디오 버스를 만들지 못했습니다.", error);
+    return null;
+  }
+}
+
+const POST_EDIT_CUTE_BGM_PATH = "Resources/Sounds/final/cuteBgm.mp3";
+
+function registerPostEditBundledBgm(soundManager){
+  if(!soundManager || !Array.isArray(soundManager.bgmOptions)) return;
+  if(soundManager.bgmOptions.some(option => option && option.id === "cute_bgm_source")) return;
+
+  const option = {
+    id: "cute_bgm_source",
+    name: "귀여운 BGM",
+    sceneName: "귀여운 BGM",
+    file: POST_EDIT_CUTE_BGM_PATH,
+    color: [220, 142, 122],
+    volume: 0.24,
+    masterVolume: 0.78,
+    rate: 1.0,
+    panValue: 0,
+    lowPassFreq: 9400,
+    delayWet: 0,
+    reverbWet: 0.05,
+    soundFile: null,
+    loading: true,
+    loadError: false
+  };
+
+  soundManager.bgmOptions.push(option);
+  if(soundManager.bgmTrack) soundManager.bgmTrack.bgmOptions = soundManager.bgmOptions;
+
+  try{
+    option.soundFile = loadSound(
+      POST_EDIT_CUTE_BGM_PATH,
+      () => {
+        option.loading = false;
+        option.loadError = false;
+        soundManager.flashMessage("귀여운 BGM을 불러왔습니다.");
+      },
+      () => {
+        option.loading = false;
+        option.loadError = true;
+        soundManager.flashMessage("cuteBgm.mp3 파일 위치를 확인해주세요.");
+      }
+    );
+  } catch(error){
+    option.loading = false;
+    option.loadError = true;
+    console.warn("귀여운 BGM을 불러오지 못했습니다.", error);
+  }
+}
+
 class SoundManager{
   constructor(){
     this.tracks = [];
@@ -34,7 +165,7 @@ class SoundManager{
     const bgmConfig = {
       ...selected,
       id: "main_bgm",
-      name: "MAIN BGM",
+      name: "배경음악",
       sceneName: selected.name || `BGM ${this.selectedBgmIndex + 1}`,
       isBgm: true,
       bgmOptions: this.bgmOptions,
@@ -50,10 +181,19 @@ class SoundManager{
   selectBgmOption(index){
     if(!this.bgmTrack || this.bgmOptions.length === 0) return null;
     const safeIndex = int(clamp(index, 0, this.bgmOptions.length - 1));
+    const option = this.bgmOptions[safeIndex];
+    if(!option || !option.soundFile){
+      this.flashMessage("선택한 BGM을 아직 불러오지 못했습니다.");
+      return null;
+    }
+    if(typeof option.soundFile.isLoaded === "function" && !option.soundFile.isLoaded()){
+      this.flashMessage(option.loadError ? "BGM 파일 위치를 확인해주세요." : "BGM을 불러오는 중입니다.");
+      return null;
+    }
     this.selectedBgmIndex = safeIndex;
     try{ localStorage.setItem(this.bgmStorageKey, String(safeIndex)); } catch(error){}
     this.stopAll();
-    this.bgmTrack.applyBgmOption(this.bgmOptions[safeIndex], safeIndex);
+    this.bgmTrack.applyBgmOption(option, safeIndex);
     this.bgmTrack.ensureMainBgmClip(null, true);
     return this.bgmTrack;
   }
@@ -90,7 +230,6 @@ class ClipInstance{
   constructor(track, startTimeSec, values = {}){
     this.trackId = track.id;
     this.startTimeSec = values.startTimeSec ?? startTimeSec;
-    this.lengthSeconds = values.lengthSeconds ?? track.getDefaultClipLengthSeconds();
     this.uid = values.uid || `${track.id}_${nf(this.startTimeSec, 1, 2)}_${Date.now()}_${int(random(10000))}`;
 
     this.volume = values.volume ?? track.defaultVolume;
@@ -101,6 +240,21 @@ class ClipInstance{
     this.reverbWet = values.reverbWet ?? track.defaultReverbWet;
     this.reverseMode = values.reverseMode ?? false;
     this.zIndex = values.zIndex ?? 0;
+
+    this.trimStartSec = Math.max(0, Number(values.trimStartSec) || 0);
+    this.trimEndSec = Math.max(0, Number(values.trimEndSec) || 0);
+    this.lengthSeconds = values.lengthSeconds ?? track.getDefaultClipLengthSeconds();
+
+    if(!track.isBgm){
+      const hasSavedTrim = values.trimStartSec !== undefined || values.trimEndSec !== undefined;
+      if(!hasSavedTrim && values.lengthSeconds !== undefined){
+        const fileDuration = track.getSourceDurationSeconds();
+        const safeRate = Math.max(0.1, Math.abs(this.rate || 1));
+        const desiredSourceDuration = clamp(Number(values.lengthSeconds) * safeRate, track.getMinimumTrimmedSourceSeconds(), fileDuration);
+        this.trimEndSec = Math.max(0, fileDuration - desiredSourceDuration);
+      }
+      track.normalizeClipTrim(this);
+    }
   }
 
   get endTimeSec(){
@@ -112,6 +266,8 @@ class ClipInstance{
       uid: this.uid,
       startTimeSec: this.startTimeSec,
       lengthSeconds: this.lengthSeconds,
+      trimStartSec: this.trimStartSec,
+      trimEndSec: this.trimEndSec,
       volume: this.volume,
       rate: this.rate,
       panValue: this.panValue,
@@ -136,7 +292,8 @@ class MixTrack{
     this.selectedBgmIndex = config.selectedBgmIndex ?? 0;
     this.bgmOptionName = config.optionName || config.sceneName || "";
 
-    this.masterVolume = config.masterVolume ?? 1.0;
+    this.defaultMasterVolume = config.masterVolume ?? 1.0;
+    this.masterVolume = this.defaultMasterVolume;
     this.muted = config.muted ?? false;
     this.solo = config.solo ?? false;
     this.loadTrackSettings();
@@ -158,6 +315,10 @@ class MixTrack{
     this.reverb = null;
     this.audioReady = false;
     this.currentReverseState = false;
+    this.lastTriggerMillis = -Infinity;
+    this.nativeVoices = new Set();
+    this.nativeReverseBuffer = null;
+    this.nativeReverseSourceBuffer = null;
 
     this.loadSavedClips();
   }
@@ -178,9 +339,12 @@ class MixTrack{
     this.defaultDelayTime = option.delayTime ?? 0.22;
     this.defaultReverbWet = option.reverbWet ?? 0;
 
+    this.stop();
     this.peakCache = {};
     this.audioReady = false;
     this.currentReverseState = false;
+    this.nativeReverseBuffer = null;
+    this.nativeReverseSourceBuffer = null;
     this.filter = null;
     this.delay = null;
     this.reverb = null;
@@ -208,6 +372,8 @@ class MixTrack{
     }
 
     clip.startTimeSec = 0;
+    clip.trimStartSec = 0;
+    clip.trimEndSec = 0;
     clip.lengthSeconds = this.getMainBgmDurationSeconds(clip.rate);
     clip.zIndex = 0;
     this.clips = [clip];
@@ -251,12 +417,16 @@ class MixTrack{
 
   toggleMute(){
     this.muted = !this.muted;
-    if(this.muted) this.stop();
+    if(this.muted){
+      this.solo = false;
+      this.stop();
+    }
     this.saveTrackSettings();
   }
 
   toggleSolo(){
     this.solo = !this.solo;
+    if(this.solo) this.muted = false;
     this.saveTrackSettings();
   }
 
@@ -283,9 +453,139 @@ class MixTrack{
     if(this.soundFile && typeof this.soundFile.duration === "function"){
       const d = this.soundFile.duration();
       const safeRate = Math.max(0.1, Math.abs(this.defaultRate || 1));
-      if(Number.isFinite(d) && d > 0) return clamp(d / safeRate, 0.35, POST_EDIT_MAX_TIMELINE_SECONDS);
+      if(Number.isFinite(d) && d > 0) return clamp(d / safeRate, 0.08, POST_EDIT_MAX_TIMELINE_SECONDS);
     }
     return POST_EDIT_FALLBACK_CLIP_SECONDS;
+  }
+
+  getMinimumTrimmedSourceSeconds(){
+    const duration = this.getSourceDurationSeconds();
+    return Math.min(0.08, Math.max(0.02, duration));
+  }
+
+  getClipSourceBounds(clip){
+    const fileDuration = Math.max(0.02, this.getSourceDurationSeconds());
+    const minimum = Math.min(this.getMinimumTrimmedSourceSeconds(), fileDuration);
+    let startSec = clamp(Number(clip && clip.trimStartSec) || 0, 0, Math.max(0, fileDuration - minimum));
+    let endTrimSec = clamp(Number(clip && clip.trimEndSec) || 0, 0, Math.max(0, fileDuration - minimum));
+
+    if(startSec + endTrimSec > fileDuration - minimum){
+      endTrimSec = Math.max(0, fileDuration - minimum - startSec);
+    }
+
+    const endSec = Math.max(startSec + minimum, fileDuration - endTrimSec);
+    return {
+      fileDuration,
+      minimum,
+      startSec,
+      endSec,
+      endTrimSec: Math.max(0, fileDuration - endSec),
+      durationSec: Math.max(minimum, endSec - startSec)
+    };
+  }
+
+  normalizeClipTrim(clip){
+    if(!clip || this.isBgm) return clip;
+    const bounds = this.getClipSourceBounds(clip);
+    clip.trimStartSec = bounds.startSec;
+    clip.trimEndSec = bounds.endTrimSec;
+    const safeRate = Math.max(0.1, Math.abs(clip.rate || 1));
+    clip.lengthSeconds = clamp(bounds.durationSec / safeRate, bounds.minimum / safeRate, POST_EDIT_MAX_TIMELINE_SECONDS);
+    return clip;
+  }
+
+  setClipTrimValue(uid, prop, value){
+    const clip = this.getClipByUid(uid);
+    if(!clip || this.isBgm) return;
+    const fileDuration = Math.max(0.02, this.getSourceDurationSeconds());
+    const minimum = Math.min(this.getMinimumTrimmedSourceSeconds(), fileDuration);
+
+    if(prop === "trimStartSec"){
+      clip.trimStartSec = clamp(Number(value) || 0, 0, Math.max(0, fileDuration - clip.trimEndSec - minimum));
+    } else if(prop === "trimEndSec"){
+      clip.trimEndSec = clamp(Number(value) || 0, 0, Math.max(0, fileDuration - clip.trimStartSec - minimum));
+    } else {
+      return;
+    }
+
+    this.normalizeClipTrim(clip);
+    this.saveClips();
+  }
+
+  resetClipTrim(uid){
+    const clip = this.getClipByUid(uid);
+    if(!clip || this.isBgm) return;
+    clip.trimStartSec = 0;
+    clip.trimEndSec = 0;
+    this.normalizeClipTrim(clip);
+    this.saveClips();
+  }
+
+  splitClipAtTimelineTime(uid, cutTimeSec){
+    const clip = this.getClipByUid(uid);
+    if(!clip || this.isBgm) return null;
+
+    const safeRate = Math.max(0.1, Math.abs(clip.rate || 1));
+    const minimumTimeline = this.getMinimumTrimmedSourceSeconds() / safeRate;
+    const cutTime = Number(cutTimeSec);
+    const localCutTime = cutTime - clip.startTimeSec;
+
+    if(!Number.isFinite(cutTime)) return null;
+    if(localCutTime <= minimumTimeline || localCutTime >= clip.lengthSeconds - minimumTimeline) return null;
+
+    const bounds = this.getClipSourceBounds(clip);
+    const consumedSource = clamp(localCutTime * safeRate, bounds.minimum, bounds.durationSec - bounds.minimum);
+    const sourceBoundary = clip.reverseMode
+      ? bounds.endSec - consumedSource
+      : bounds.startSec + consumedSource;
+
+    const originalStartTime = clip.startTimeSec;
+    const originalValues = {
+      volume: clip.volume,
+      rate: clip.rate,
+      panValue: clip.panValue,
+      lowPassFreq: clip.lowPassFreq,
+      delayWet: clip.delayWet,
+      reverbWet: clip.reverbWet,
+      reverseMode: clip.reverseMode
+    };
+
+    let leftTrimStart;
+    let leftTrimEnd;
+    let rightTrimStart;
+    let rightTrimEnd;
+
+    if(clip.reverseMode){
+      leftTrimStart = sourceBoundary;
+      leftTrimEnd = bounds.endTrimSec;
+      rightTrimStart = bounds.startSec;
+      rightTrimEnd = Math.max(0, bounds.fileDuration - sourceBoundary);
+    } else {
+      leftTrimStart = bounds.startSec;
+      leftTrimEnd = Math.max(0, bounds.fileDuration - sourceBoundary);
+      rightTrimStart = sourceBoundary;
+      rightTrimEnd = bounds.endTrimSec;
+    }
+
+    clip.trimStartSec = leftTrimStart;
+    clip.trimEndSec = leftTrimEnd;
+    this.normalizeClipTrim(clip);
+    clip.startTimeSec = originalStartTime;
+
+    const rightClip = new ClipInstance(this, cutTime, {
+      ...originalValues,
+      startTimeSec: cutTime,
+      trimStartSec: rightTrimStart,
+      trimEndSec: rightTrimEnd,
+      zIndex: this.nextZIndex++
+    });
+    rightClip.startTimeSec = cutTime;
+
+    this.clips.push(rightClip);
+    this.clips.sort((a, b) => a.startTimeSec - b.startTimeSec || a.zIndex - b.zIndex);
+    this.saveClips();
+
+    return { leftClip: clip, rightClip };
   }
 
   loadSavedClips(){
@@ -319,11 +619,19 @@ class MixTrack{
     this.delay = new p5.Delay();
     this.reverb = new p5.Reverb();
 
+    try{
+      if(typeof this.soundFile.playMode === "function") this.soundFile.playMode("sustain");
+    } catch(error){}
+
     this.soundFile.disconnect();
     this.soundFile.connect(this.filter);
-    this.filter.connect();
+    this.filter.disconnect();
 
-    this.delay.process(this.filter, this.defaultDelayTime, 0.35, 2300);
+    const masterBus = getPostEditMasterBus();
+    if(masterBus && masterBus.input) this.filter.connect(masterBus.input);
+    else this.filter.connect();
+
+    this.delay.process(this.filter, this.defaultDelayTime, 0.24, 2300);
     this.reverb.process(this.filter, 2.4, 2.0);
 
     this.audioReady = true;
@@ -358,16 +666,165 @@ class MixTrack{
     const clip = this.getClipByUid(uid);
     if(!clip) return;
     clip[prop] = value;
+    if(prop === "rate" && !this.isBgm) this.normalizeClipTrim(clip);
     this.saveClips();
   }
 
-  applyClipMix(clip){
+  getNativeAudioBuffer(reverseMode = false){
+    const buffer = this.soundFile && this.soundFile.buffer;
+    if(!buffer || typeof buffer.getChannelData !== "function") return null;
+    if(!reverseMode) return buffer;
+
+    if(this.nativeReverseBuffer && this.nativeReverseSourceBuffer === buffer){
+      return this.nativeReverseBuffer;
+    }
+
+    try{
+      const context = typeof getAudioContext === "function" ? getAudioContext() : null;
+      if(!context) return null;
+      const reversed = context.createBuffer(buffer.numberOfChannels, buffer.length, buffer.sampleRate);
+      for(let channel = 0; channel < buffer.numberOfChannels; channel++){
+        const sourceData = buffer.getChannelData(channel);
+        const targetData = reversed.getChannelData(channel);
+        for(let left = 0, right = sourceData.length - 1; left < sourceData.length; left++, right--){
+          targetData[left] = sourceData[right];
+        }
+      }
+      this.nativeReverseSourceBuffer = buffer;
+      this.nativeReverseBuffer = reversed;
+      return reversed;
+    } catch(error){
+      console.warn(`${this.name} 역재생 버퍼 생성 실패`, error);
+      return null;
+    }
+  }
+
+  cleanupNativeVoice(voice){
+    if(!voice) return;
+    this.nativeVoices.delete(voice);
+    const nodes = voice.nodes || [];
+    for(const node of nodes){
+      try{ node.disconnect(); } catch(error){}
+    }
+  }
+
+  stopNativeVoices(){
+    const voices = [...this.nativeVoices];
+    this.nativeVoices.clear();
+    for(const voice of voices){
+      try{ voice.source.onended = null; } catch(error){}
+      try{ voice.source.stop(); } catch(error){}
+      const nodes = voice.nodes || [];
+      for(const node of nodes){
+        try{ node.disconnect(); } catch(error){}
+      }
+    }
+  }
+
+  isAnyVoicePlaying(){
+    if(this.nativeVoices.size > 0) return true;
+    try{
+      return !!(this.soundFile && typeof this.soundFile.isPlaying === "function" && this.soundFile.isPlaying());
+    } catch(error){
+      return false;
+    }
+  }
+
+  playNativeClipVoice(clip, offsetWithinClipSec = 0, gainScale = 1){
+    if(!clip || !this.soundFile) return false;
+    const masterBus = getPostEditMasterBus();
+    if(!masterBus || !masterBus.context || !masterBus.input) return false;
+
+    const context = masterBus.context;
+    try{
+      if(context.state === "suspended") context.resume();
+    } catch(error){}
+
+    const audioBuffer = this.getNativeAudioBuffer(!!clip.reverseMode);
+    if(!audioBuffer) return false;
+
+    const bounds = this.getClipSourceBounds(clip);
+    const safeRate = Math.max(0.1, Math.abs(Number(clip.rate) || 1));
+    const timelineOffset = clamp(Number(offsetWithinClipSec) || 0, 0, Math.max(0, clip.lengthSeconds - 0.005));
+    const sourceOffsetWithinSelection = timelineOffset * safeRate;
+    const cueBase = clip.reverseMode ? bounds.endTrimSec : bounds.startSec;
+    const sourceOffset = clamp(cueBase + sourceOffsetWithinSelection, 0, Math.max(0, audioBuffer.duration - 0.005));
+    const remainingTimeline = Math.max(0.005, clip.lengthSeconds - timelineOffset);
+    const remainingSource = Math.max(0.005, bounds.durationSec - sourceOffsetWithinSelection);
+    const sourceDuration = Math.min(remainingSource, remainingTimeline * safeRate, audioBuffer.duration - sourceOffset);
+    if(!Number.isFinite(sourceDuration) || sourceDuration <= 0.004) return false;
+
+    try{
+      const source = context.createBufferSource();
+      source.buffer = audioBuffer;
+      source.playbackRate.value = safeRate;
+
+      let currentNode = source;
+      const nodes = [source];
+
+      const lowPassFreq = clamp(Number(clip.lowPassFreq) || 10000, 120, Math.min(20000, context.sampleRate * 0.48));
+      if(lowPassFreq < Math.min(18000, context.sampleRate * 0.45)){
+        const filter = context.createBiquadFilter();
+        filter.type = "lowpass";
+        filter.frequency.value = lowPassFreq;
+        filter.Q.value = 0.7;
+        currentNode.connect(filter);
+        currentNode = filter;
+        nodes.push(filter);
+      }
+
+      if(typeof context.createStereoPanner === "function"){
+        const panner = context.createStereoPanner();
+        panner.pan.value = clamp(Number(clip.panValue) || 0, -1, 1);
+        currentNode.connect(panner);
+        currentNode = panner;
+        nodes.push(panner);
+      }
+
+      const voiceGain = context.createGain();
+      const baseVolume = clamp((Number(clip.volume) || 0) * this.masterVolume, 0, 1.15);
+      voiceGain.gain.value = clamp(baseVolume * clamp(Number(gainScale) || 1, 0, 1), 0, 1.15);
+      currentNode.connect(voiceGain);
+      voiceGain.connect(masterBus.input);
+      nodes.push(voiceGain);
+
+      const delayWet = clamp(Number(clip.delayWet) || 0, 0, 0.72);
+      if(delayWet > 0.005 && masterBus.delayInput){
+        const delaySend = context.createGain();
+        delaySend.gain.value = delayWet * 0.55;
+        voiceGain.connect(delaySend);
+        delaySend.connect(masterBus.delayInput);
+        nodes.push(delaySend);
+      }
+
+      const reverbWet = clamp(Number(clip.reverbWet) || 0, 0, 0.72);
+      if(reverbWet > 0.005 && masterBus.reverbInput){
+        const reverbSend = context.createGain();
+        reverbSend.gain.value = reverbWet * 0.52;
+        voiceGain.connect(reverbSend);
+        reverbSend.connect(masterBus.reverbInput);
+        nodes.push(reverbSend);
+      }
+
+      const voice = { source, nodes };
+      this.nativeVoices.add(voice);
+      source.onended = () => this.cleanupNativeVoice(voice);
+      source.start(context.currentTime + 0.003, sourceOffset, sourceDuration);
+      this.lastTriggerMillis = typeof millis === "function" ? millis() : Date.now();
+      return true;
+    } catch(error){
+      console.warn(`${this.name} 네이티브 오디오 재생 실패`, error);
+      return false;
+    }
+  }
+
+  applyClipMix(clip, gainScale = 1){
     if(!this.soundFile || !clip) return;
     this.ensureAudio();
     this.ensureReverseState(clip.reverseMode);
 
-    const effectiveVolume = clamp(clip.volume * this.masterVolume, 0, 1);
-    this.soundFile.setVolume(effectiveVolume);
+    const outputGain = clamp(gainScale, 0.08, 1);
+    this.soundFile.setVolume(outputGain, 0.02);
     this.soundFile.rate(clip.rate);
     this.soundFile.pan(clip.panValue);
 
@@ -375,8 +832,8 @@ class MixTrack{
       this.filter.freq(clip.lowPassFreq);
       this.filter.res(6);
     }
-    if(this.delay) this.delay.drywet(clip.delayWet);
-    if(this.reverb) this.reverb.drywet(clip.reverbWet);
+    if(this.delay) this.delay.drywet(clamp(clip.delayWet, 0, 0.72));
+    if(this.reverb) this.reverb.drywet(clamp(clip.reverbWet, 0, 0.72));
   }
 
   ensureReverseState(shouldBeReversed){
@@ -391,25 +848,58 @@ class MixTrack{
     }
   }
 
-  triggerClip(clip, offsetWithinClipSec = 0){
-    if(!clip || !this.soundFile) return;
+  triggerClip(clip, offsetWithinClipSec = 0, gainScale = 1){
+    if(!clip || !this.soundFile) return false;
 
-    this.applyClipMix(clip);
-    const fileDuration = this.soundFile.duration ? this.soundFile.duration() : clip.lengthSeconds;
+    if(this.playNativeClipVoice(clip, offsetWithinClipSec, gainScale)) return true;
+
+    if(this.currentReverseState !== clip.reverseMode){
+      try{
+        if(this.soundFile.isPlaying()) this.soundFile.stop();
+      } catch(error){}
+    }
+
+    this.applyClipMix(clip, gainScale);
+    const bounds = this.getClipSourceBounds(clip);
     const safeRate = Math.max(0.1, Math.abs(clip.rate || 1));
-    const timelineOffset = clamp(offsetWithinClipSec, 0, Math.max(0, clip.lengthSeconds - 0.02));
-    const sourceOffset = clamp(timelineOffset * safeRate, 0, Math.max(0, fileDuration - 0.02));
-    const remainingTimeline = Math.max(0.02, clip.lengthSeconds - timelineOffset);
-    const remainingSource = Math.max(0.02, fileDuration - sourceOffset);
+    const timelineOffset = clamp(offsetWithinClipSec, 0, Math.max(0, clip.lengthSeconds - 0.01));
+    const sourceOffsetWithinSelection = timelineOffset * safeRate;
+    const cueBase = clip.reverseMode ? bounds.endTrimSec : bounds.startSec;
+    const sourceOffset = clamp(cueBase + sourceOffsetWithinSelection, 0, Math.max(0, bounds.fileDuration - 0.01));
+    const remainingTimeline = Math.max(0.01, clip.lengthSeconds - timelineOffset);
+    const remainingSource = Math.max(0.01, bounds.durationSec - sourceOffsetWithinSelection);
     const sourceDuration = Math.min(remainingSource, remainingTimeline * safeRate);
-    this.soundFile.play(0, clip.rate, clamp(clip.volume * this.masterVolume, 0, 1), sourceOffset, sourceDuration);
+    if(sourceDuration <= 0.005) return false;
+
+    const voiceVolume = clamp(clip.volume * this.masterVolume, 0, 0.96);
+    this.soundFile.play(0, clip.rate, voiceVolume, sourceOffset, sourceDuration);
+    this.lastTriggerMillis = typeof millis === "function" ? millis() : Date.now();
+    return true;
   }
 
   previewClip(clip){
     if(!clip || !this.soundFile) return;
-    this.applyClipMix(clip);
-    const fileDuration = this.soundFile.duration ? this.soundFile.duration() : 1.6;
-    this.soundFile.play(0, clip.rate, clamp(clip.volume * this.masterVolume, 0, 1), 0, Math.min(fileDuration, clip.lengthSeconds, 2.2));
+    this.stop();
+    if(this.playNativeClipVoice(clip, 0, 1)) return;
+
+    this.ensureAudio();
+    this.ensureReverseState(clip.reverseMode);
+
+    const previewVolume = clamp(clip.volume, 0, 1);
+    this.soundFile.setVolume(previewVolume);
+    this.soundFile.rate(clip.rate);
+    this.soundFile.pan(clip.panValue);
+
+    if(this.filter){
+      this.filter.freq(clip.lowPassFreq);
+      this.filter.res(6);
+    }
+    if(this.delay) this.delay.drywet(clip.delayWet);
+    if(this.reverb) this.reverb.drywet(clip.reverbWet);
+
+    const bounds = this.getClipSourceBounds(clip);
+    const cueStart = clip.reverseMode ? bounds.endTrimSec : bounds.startSec;
+    this.soundFile.play(0, clip.rate, previewVolume, cueStart, bounds.durationSec);
   }
 
   previewSourceOnce(){
@@ -424,14 +914,19 @@ class MixTrack{
       delayWet: this.defaultDelayWet,
       reverbWet: this.defaultReverbWet,
       reverseMode: false,
-      lengthSeconds: fileDuration
+      trimStartSec: 0,
+      trimEndSec: 0,
+      lengthSeconds: fileDuration / Math.max(0.1, Math.abs(this.defaultRate || 1))
     };
+    if(this.playNativeClipVoice(previewClip, 0, 1)) return;
     this.applyClipMix(previewClip);
     this.soundFile.play(0, this.defaultRate, clamp(this.defaultVolume * this.masterVolume, 0, 1), 0, fileDuration);
   }
 
   stop(){
-    if(this.soundFile && this.soundFile.isPlaying()) this.soundFile.stop();
+    this.stopNativeVoices();
+    if(!this.soundFile) return;
+    try{ this.soundFile.stop(); } catch(error){}
   }
 
   getPeaks(count = 48){
@@ -450,6 +945,7 @@ class MixTrack{
 class MixerUI {
 constructor(soundManager){
     this.soundManager = soundManager;
+    registerPostEditBundledBgm(this.soundManager);
 
     this.totalSeconds = this.getBgmTimelineSeconds();
     this.snapDivision = POST_EDIT_SNAP_DIVISION;
@@ -474,6 +970,7 @@ constructor(soundManager){
     this.playStartTimeSec = 0;
     this.lastTimePositionSec = 0;
     this.playedClipIds = new Set();
+    this.activeEffectTracks = new Map();
     this.currentTimePositionSec = 0;
 
     this.metronomeEnabled = false;
@@ -487,6 +984,7 @@ constructor(soundManager){
 
     this.draggingSlider = null;
     this.draggingTrackVolume = null;
+    this.draggingClips = null;
     this.sliderDefs = [];
 
     this.draggingPlayhead = false;
@@ -497,9 +995,20 @@ constructor(soundManager){
     this.bgmButtonRects = [];
     this.bpmInput = null;
     this.bpmDraft = String(this.bpm);
+    this.showGuideBanner = true;
+    this.guideCloseRect = null;
+    this.showFinishConfirm = false;
+    this.finishConfirmYesRect = null;
+    this.finishConfirmNoRect = null;
+    this.showResetConfirm = false;
+    this.resetConfirmYesRect = null;
+    this.resetConfirmNoRect = null;
+    this.editingSessionPrepared = false;
+    this.undoHistory = [];
+    this.undoLimit = 40;
+    this.isRestoringUndo = false;
 
     this.syncTimelineToBgm(true);
-    this.ensureGuideMix();
   }
 }
 
@@ -530,26 +1039,226 @@ Object.defineProperty(MixerUI.prototype, 'editingClip', { get: function() {
   }, configurable: true });
 
 MixerUI.prototype.ensureGuideMix = function() {
-    const hasEffectClip = this.soundManager.tracks.some(track => !track.isBgm && track.clips.length > 0);
-    if(hasEffectClip) return;
+  };
 
-    const guideTimes = [1.2, 3.6, 5.8, 8.0, 11.0, 13.4, 16.2, 19.5];
-    const effectTracks = this.soundManager.tracks.filter(track => !track.isBgm).slice(0, guideTimes.length);
+MixerUI.prototype.captureUndoState = function() {
+    return {
+      selectedTrackIndex: this.selectedTrackIndex,
+      selectedClipUid: this.selectedClipUid,
+      selectedClipUids: [...this.selectedClipUids],
+      tracks: this.soundManager.tracks.map(track => ({
+        id: track.id,
+        masterVolume: track.masterVolume,
+        muted: track.muted,
+        solo: track.solo,
+        nextZIndex: track.nextZIndex,
+        clips: track.clips.map(clip => clip.toJSON())
+      }))
+    };
+  };
 
-    for(let i = 0; i < effectTracks.length; i++){
-      const track = effectTracks[i];
-      const start = Math.min(guideTimes[i], Math.max(0, this.totalSeconds - 0.6));
-      const clip = track.createClip(start);
-      if(!clip) continue;
-      clip.volume = clamp(0.72 + (i % 3) * 0.08, 0, 1);
-      clip.panValue = [-0.35, 0.22, 0, 0.42, -0.18, 0.12, -0.42, 0.3][i] || 0;
-      clip.reverbWet = i % 3 === 1 ? 0.18 : 0.06;
-      clip.delayWet = i % 4 === 2 ? 0.14 : 0;
-      clip.lowPassFreq = i % 5 === 0 ? 6200 : 10000;
-      clip.lengthSeconds = clamp(track.getSourceDurationSeconds() / Math.max(0.1, Math.abs(clip.rate || 1)), 0.35, POST_EDIT_MAX_TIMELINE_SECONDS);
+MixerUI.prototype.pushUndoState = function(label = "edit", state = null) {
+    if(this.isRestoringUndo) return;
+    const snapshot = state || this.captureUndoState();
+    let serialized = "";
+    try{ serialized = JSON.stringify(snapshot); } catch(error){}
+    const previous = this.undoHistory.length > 0 ? this.undoHistory[this.undoHistory.length - 1] : null;
+    if(previous && serialized && previous.serialized === serialized) return;
+    this.undoHistory.push({ label, state: snapshot, serialized });
+    if(this.undoHistory.length > this.undoLimit){
+      this.undoHistory.splice(0, this.undoHistory.length - this.undoLimit);
+    }
+  };
+
+MixerUI.prototype.restoreUndoState = function(state) {
+    if(!state || !Array.isArray(state.tracks)) return false;
+    this.isRestoringUndo = true;
+    try{
+      this.stopTransport(false);
+      this.soundManager.stopAll();
+      this.closeClipEditWindow();
+
+      for(const savedTrack of state.tracks){
+        const track = this.soundManager.tracks.find(item => item.id === savedTrack.id);
+        if(!track) continue;
+        track.masterVolume = clamp(Number(savedTrack.masterVolume), 0, 1);
+        if(!Number.isFinite(track.masterVolume)) track.masterVolume = track.defaultMasterVolume ?? 1.0;
+        track.muted = !!savedTrack.muted;
+        track.solo = !!savedTrack.solo;
+        track.clips = Array.isArray(savedTrack.clips)
+          ? savedTrack.clips.map(data => new ClipInstance(track, data.startTimeSec ?? 0, data))
+          : [];
+        const maxZ = track.clips.reduce((value, clip) => Math.max(value, Number(clip.zIndex) || 0), 0);
+        track.nextZIndex = Math.max(Number(savedTrack.nextZIndex) || 1, maxZ + 1);
+        if(track.isBgm && track.clips.length === 0){
+          track.ensureMainBgmClip(null, true);
+        } else {
+          track.saveClips();
+        }
+        track.saveTrackSettings();
+      }
+
+      const existingUids = new Set();
+      for(const track of this.soundManager.tracks){
+        for(const clip of track.clips) existingUids.add(clip.uid);
+      }
+      this.selectedTrackIndex = clamp(Number(state.selectedTrackIndex) || 0, 0, Math.max(0, this.soundManager.tracks.length - 1));
+      this.selectedClipUids = Array.isArray(state.selectedClipUids)
+        ? state.selectedClipUids.filter(uid => existingUids.has(uid))
+        : [];
+      this.selectedClipUid = existingUids.has(state.selectedClipUid)
+        ? state.selectedClipUid
+        : (this.selectedClipUids.length > 0 ? this.selectedClipUids[this.selectedClipUids.length - 1] : null);
+      this.editingTrackIndex = -1;
+      this.editingClipUid = null;
+      this.draggingSlider = null;
+      this.draggingTrackVolume = null;
+      this.draggingPlayhead = false;
+      this.draggingScrollbar = null;
+      this.selectionBox = null;
+      this.isSelectingBox = false;
+      this.playedClipIds.clear();
+      this.activeEffectTracks.clear();
+      this.showFinishConfirm = false;
+      this.showResetConfirm = false;
+      this.syncTimelineToBgm(false);
+      this.currentTimePositionSec = clamp(this.currentTimePositionSec, 0, Math.max(0, this.totalSeconds - 0.01));
+      this.lastTimePositionSec = this.currentTimePositionSec;
+      return true;
+    } finally {
+      this.isRestoringUndo = false;
+    }
+  };
+
+MixerUI.prototype.undoLastAction = function() {
+    if(!this.undoHistory || this.undoHistory.length === 0){
+      this.soundManager.flashMessage("되돌릴 작업이 없습니다.");
+      return false;
+    }
+    const entry = this.undoHistory.pop();
+    if(!entry || !this.restoreUndoState(entry.state)){
+      this.soundManager.flashMessage("이전 작업을 복원하지 못했습니다.");
+      return false;
+    }
+    this.soundManager.flashMessage("이전 작업으로 되돌렸습니다.");
+    return true;
+  };
+
+MixerUI.prototype.clearStoredMixState = function() {
+    try{
+      const keysToRemove = [];
+      for(let i = 0; i < localStorage.length; i++){
+        const key = localStorage.key(i);
+        if(!key) continue;
+        if(
+          key.startsWith("re_summer_arrangement_") ||
+          key.startsWith("re_summer_track_settings_") ||
+          key.startsWith("re_summer_guide_mix_")
+        ){
+          keysToRemove.push(key);
+        }
+      }
+      for(const key of keysToRemove) localStorage.removeItem(key);
+    } catch(error){}
+  };
+
+MixerUI.prototype.prepareFreshEditingSession = function() {
+    this.stopTransport(true);
+    this.soundManager.stopAll();
+    this.clearStoredMixState();
+
+    for(const track of this.soundManager.tracks){
+      track.stop();
+      track.masterVolume = track.defaultMasterVolume ?? 1.0;
+      track.muted = false;
+      track.solo = false;
+
+      if(track.isBgm){
+        track.clips = [];
+        track.nextZIndex = 1;
+        track.ensureMainBgmClip(null, true);
+      } else {
+        track.clips = [];
+        track.nextZIndex = 1;
+        track.saveClips();
+      }
+
+      track.saveTrackSettings();
     }
 
-    for(const track of effectTracks) track.saveClips();
+    this.playedClipIds.clear();
+    this.activeEffectTracks.clear();
+    this.selectedTrackIndex = 0;
+    this.selectedClipUid = null;
+    this.selectedClipUids = [];
+    this.editingTrackIndex = -1;
+    this.editingClipUid = null;
+    this.draggingSlider = null;
+    this.draggingTrackVolume = null;
+    this.draggingClips = null;
+    this.draggingPlayhead = false;
+    this.draggingScrollbar = null;
+    this.selectionBox = null;
+    this.isSelectingBox = false;
+    this.currentTimePositionSec = 0;
+    this.lastTimePositionSec = 0;
+    this.timelineScrollSec = 0;
+    this.verticalScrollPx = 0;
+    this.showGuideBanner = true;
+    this.showFinishConfirm = false;
+    this.finishConfirmYesRect = null;
+    this.finishConfirmNoRect = null;
+    this.showResetConfirm = false;
+    this.resetConfirmYesRect = null;
+    this.resetConfirmNoRect = null;
+    this.syncTimelineToBgm(true);
+    this.undoHistory = [];
+    this.editingSessionPrepared = true;
+  };
+
+MixerUI.prototype.resetMix = function() {
+    this.stopTransport(true);
+    this.soundManager.stopAll();
+
+    for(const track of this.soundManager.tracks){
+      track.masterVolume = track.defaultMasterVolume ?? 1.0;
+      track.muted = false;
+      track.solo = false;
+      track.saveTrackSettings();
+
+      if(track.isBgm){
+        track.ensureMainBgmClip(null, true);
+      } else {
+        track.clips = [];
+        track.nextZIndex = 1;
+        track.saveClips();
+      }
+    }
+
+    try{ localStorage.setItem("re_summer_guide_mix_initialized_v1", "1"); } catch(error){}
+
+    this.selectedTrackIndex = 0;
+    this.selectedClipUid = null;
+    this.selectedClipUids = [];
+    this.editingTrackIndex = -1;
+    this.editingClipUid = null;
+    this.draggingSlider = null;
+    this.draggingTrackVolume = null;
+    this.draggingPlayhead = false;
+    this.selectionBox = null;
+    this.isSelectingBox = false;
+    this.currentTimePositionSec = 0;
+    this.lastTimePositionSec = 0;
+    this.timelineScrollSec = 0;
+    this.verticalScrollPx = 0;
+    this.showFinishConfirm = false;
+    this.finishConfirmYesRect = null;
+    this.finishConfirmNoRect = null;
+    this.showResetConfirm = false;
+    this.resetConfirmYesRect = null;
+    this.resetConfirmNoRect = null;
+    this.syncTimelineToBgm(true);
+    this.soundManager.flashMessage("믹싱 조건을 초기화했습니다.");
   };
 
 MixerUI.prototype.getBgmTimelineSeconds = function() {
@@ -622,6 +1331,7 @@ MixerUI.prototype.setMultiSelection = function(items) {
   };
 
 MixerUI.prototype.update = function() {
+    if(!this.editingSessionPrepared) this.prepareFreshEditingSession();
     this.updateBpmInputPosition();
     this.drawBackground();
     this.updateTransport();
@@ -636,6 +1346,9 @@ MixerUI.prototype.update = function() {
     this.clampVerticalScroll();
     this.drawLayout();
     if(this.editingClip) this.drawClipEditWindow();
+    if(this.showGuideBanner) this.drawGuideBanner();
+    if(this.showFinishConfirm) this.drawFinishConfirmation();
+    if(this.showResetConfirm) this.drawResetConfirmation();
   };
 
 MixerUI.prototype.beatDurationSec = function() {
@@ -654,6 +1367,25 @@ MixerUI.prototype.isTrackAudible = function(track) {
     if(!track || track.muted) return false;
     if(this.hasSoloTrack()) return !!track.solo;
     return true;
+  };
+
+MixerUI.prototype.refreshTrackAudibility = function() {
+    if(!this.isPlaying){
+      for(const track of this.soundManager.tracks){
+        if(!this.isTrackAudible(track)) track.stop();
+      }
+      return;
+    }
+
+    const resumeTime = clamp(this.currentTimePositionSec || 0, 0, Math.max(0, this.totalSeconds - 0.01));
+    this.soundManager.stopAll();
+    this.playedClipIds.clear();
+    this.activeEffectTracks.clear();
+    this.currentTimePositionSec = resumeTime;
+    this.lastTimePositionSec = resumeTime;
+    this.playStartTimeSec = resumeTime;
+    this.playStartMillis = millis();
+    this.triggerClipsAlreadyUnderPlayhead(resumeTime);
   };
 
 MixerUI.prototype.getLayout = function() {
@@ -782,14 +1514,13 @@ MixerUI.prototype.getPreviewClipRect = function(trackIndex, startTimeSec, length
   };
 
 MixerUI.prototype.getSourceIndexAtMouse = function() {
-    const layout = this.getLayout();
-    if(layout.leftW <= 0) return -1;
-    const rowH = 70;
-    for(let i = 0; i < this.soundManager.tracks.length; i++){
-      const rowY = layout.top + 58 + i * rowH;
-      if(pointInRect(mouseX, mouseY, layout.margin + 12, rowY, layout.leftW - 24, rowH - 12)) return i;
-    }
-    return -1;
+    const grid = this.getGridLayout();
+    if(mouseX < grid.x + 14 || mouseX >= grid.cellStartX) return -1;
+    if(mouseY < grid.laneStartY || mouseY > grid.laneBottomY) return -1;
+    const contentY = mouseY - grid.laneStartY + this.verticalScrollPx;
+    const index = Math.floor(contentY / grid.rowH);
+    if(index < 0 || index >= this.soundManager.tracks.length) return -1;
+    return index;
   };
 
 MixerUI.prototype.getTrackControlAtMouse = function() {
@@ -800,8 +1531,8 @@ MixerUI.prototype.getTrackControlAtMouse = function() {
       const nameY = rowY + Math.min(18, Math.max(13, grid.rowH * 0.28));
       const buttonSize = clamp(grid.rowH * 0.24, 16, 21);
       const buttonY = nameY - buttonSize / 2;
-      const muteX = grid.x + 88;
-      const soloX = grid.x + 112;
+      const muteX = grid.x + grid.labelW - 62;
+      const soloX = grid.x + grid.labelW - 36;
       if(pointInRect(mouseX, mouseY, muteX, buttonY, buttonSize, buttonSize)) return { type: "mute", trackIndex: i };
       if(pointInRect(mouseX, mouseY, soloX, buttonY, buttonSize, buttonSize)) return { type: "solo", trackIndex: i };
       if(grid.rowH >= 46){
@@ -843,6 +1574,29 @@ MixerUI.prototype.getClipAtMouse = function() {
     return null;
   };
 
+MixerUI.prototype.pruneActiveEffectTracks = function(timeSec) {
+    this.activeEffectTracks.clear();
+  };
+
+MixerUI.prototype.effectHeadroomGain = function(effectCount) {
+    return 1;
+  };
+
+MixerUI.prototype.rebalanceActiveEffectGain = function(targetGain = null) {
+  };
+
+MixerUI.prototype.triggerClipEvents = function(events, timelineTimeSec) {
+    if(!Array.isArray(events) || events.length === 0) return;
+
+    for(const event of events){
+      if(!event || !event.track || !event.clip) continue;
+      const offset = Math.max(0, Number(event.offset) || 0);
+      event.track.triggerClip(event.clip, offset, 1);
+      this.playedClipIds.add(event.clip.uid);
+    }
+  };
+
+
 MixerUI.prototype.updateTransport = function() {
     if(!this.isPlaying) return;
 
@@ -850,25 +1604,32 @@ MixerUI.prototype.updateTransport = function() {
     const timePosition = this.playStartTimeSec + elapsedRealSec * this.transportSpeedMultiplier();
 
     if(timePosition >= this.totalSeconds){
-      this.currentTimePositionSec = this.totalSeconds;
-      this.stopTransport(false);
+      if(this.totalSeconds <= 0.01){
+        this.stopTransport(true);
+        return;
+      }
+      this.stopTransport(true);
+      this.timelineScrollSec = 0;
+      this.lastTimePositionSec = 0;
+      this.startTransport();
       return;
     }
 
     const prevPosition = this.lastTimePositionSec;
     this.currentTimePositionSec = timePosition;
+    const events = [];
 
     for(const track of this.soundManager.tracks){
       if(!this.isTrackAudible(track)) continue;
       for(const clip of track.clips){
         if(this.playedClipIds.has(clip.uid)) continue;
         if(clip.startTimeSec >= prevPosition && clip.startTimeSec < timePosition + 0.006){
-          track.triggerClip(clip);
-          this.playedClipIds.add(clip.uid);
+          events.push({ track, clip, offset: 0 });
         }
       }
     }
 
+    this.triggerClipEvents(events, timePosition);
     this.updateMetronomeClicks(prevPosition, timePosition);
 
     this.lastTimePositionSec = timePosition;
@@ -900,6 +1661,11 @@ MixerUI.prototype.autoScrollDuringPlayback = function() {
 
 MixerUI.prototype.startTransport = function() {
     this.soundManager.stopAll();
+    this.activeEffectTracks.clear();
+    for(const track of this.soundManager.tracks){
+      if(track.isBgm || !track.soundFile) continue;
+      try{ track.soundFile.setVolume(1, 0.01); } catch(error){}
+    }
 
     const startTime = clamp(this.currentTimePositionSec || 0, 0, Math.max(0, this.totalSeconds - 0.01));
     this.currentTimePositionSec = startTime;
@@ -916,16 +1682,16 @@ MixerUI.prototype.startTransport = function() {
   };
 
 MixerUI.prototype.triggerClipsAlreadyUnderPlayhead = function(timeSec) {
+    const events = [];
     for(const track of this.soundManager.tracks){
       if(!this.isTrackAudible(track)) continue;
       for(const clip of track.clips){
         if(clip.startTimeSec <= timeSec && clip.endTimeSec > timeSec){
-          const offset = timeSec - clip.startTimeSec;
-          track.triggerClip(clip, offset);
-          this.playedClipIds.add(clip.uid);
+          events.push({ track, clip, offset: timeSec - clip.startTimeSec });
         }
       }
     }
+    this.triggerClipEvents(events, timeSec);
   };
 
 MixerUI.prototype.stopTransport = function(resetToStart = false) {
@@ -933,8 +1699,13 @@ MixerUI.prototype.stopTransport = function(resetToStart = false) {
     if(resetToStart) this.currentTimePositionSec = 0;
     this.lastTimePositionSec = this.currentTimePositionSec || 0;
     this.playedClipIds.clear();
+    this.activeEffectTracks.clear();
     this.lastMetronomeBeatIndex = Math.floor(this.lastTimePositionSec / this.beatDurationSec());
     this.soundManager.stopAll();
+    for(const track of this.soundManager.tracks){
+      if(track.isBgm || !track.soundFile) continue;
+      try{ track.soundFile.setVolume(1, 0.02); } catch(error){}
+    }
   };
 
 MixerUI.prototype.toggleTransport = function() {
@@ -946,7 +1717,7 @@ MixerUI.prototype.drawBackground = function() {
   };
 
 MixerUI.prototype.drawEmptyState = function() {
-    drawPanel(380, 230, 520, 220, "Post Edit DAW");
+    drawPanel(380, 230, 520, 220, "사운드 편집");
     push();
     fill(70, 50, 33);
     textAlign(CENTER, CENTER);
@@ -958,7 +1729,7 @@ MixerUI.prototype.drawEmptyState = function() {
 MixerUI.prototype.drawLayout = function() {
     const layout = this.getLayout();
     this.drawHeader();
-    drawPanel(layout.timelineX, layout.top, layout.timelineW, layout.panelH, "ARRANGEMENT");
+    drawPanel(layout.timelineX, layout.top, layout.timelineW, layout.panelH, "사운드 편집");
     this.drawArrangement(layout.timelineX, layout.top, layout.timelineW, layout.panelH);
   };
 
@@ -969,17 +1740,21 @@ MixerUI.prototype.drawHeader = function() {
     rect(0, 0, width, 68);
     pop();
 
-    drawSoftButton(28, 18, 80, 34, "PLAY", this.isPlaying);
-    drawSoftButton(116, 18, 80, 34, "STOP");
-    drawSoftButton(208, 18, 98, 34, "DELETE", !!this.selectedClip);
-    drawSoftButton(318, 18, 100, 34, "FINISH");
+    drawSoftButton(28, 18, 80, 34, "재생", this.isPlaying);
+    drawSoftButton(116, 18, 80, 34, "정지");
+    drawSoftButton(208, 18, 98, 34, "삭제", !!this.selectedClip);
+    drawSoftButton(318, 18, 100, 34, "확정");
+    drawSoftButton(430, 18, 92, 34, "초기화");
+    drawSoftButton(534, 18, 82, 34, "안내", this.showGuideBanner);
+    this.drawBgmSelector();
+
     push();
     fill(255, 236, 199);
     textAlign(LEFT, CENTER);
     textStyle(BOLD);
-    textSize(13);
-    text("H", 1052, 34);
-    text("V", 1160, 34);
+    textSize(12.5);
+    text("가로", 1038, 34);
+    text("세로", 1144, 34);
     pop();
 
     drawSoftButton(1068, 19, 32, 30, "−");
@@ -988,8 +1763,225 @@ MixerUI.prototype.drawHeader = function() {
     drawSoftButton(1212, 19, 32, 30, "+");
   };
 
+MixerUI.prototype.getGuidePanelRect = function() {
+    return { x: 154, y: 78, w: 972, h: 558 };
+  };
+
+MixerUI.prototype.drawGuideBanner = function() {
+    const panel = this.getGuidePanelRect();
+    push();
+    noStroke();
+    fill(0, 166);
+    rect(0, 0, width, height);
+    pop();
+
+    drawPanel(panel.x, panel.y, panel.w, panel.h, "인터페이스 안내");
+
+    push();
+    fill(62, 43, 29);
+    textAlign(LEFT, TOP);
+    textStyle(BOLD);
+    textSize(22);
+    text("할머니댁의 소리를 배치하고 편집해 나만의 음악을 만들어보세요.", panel.x + 34, panel.y + 54);
+
+    const leftX = panel.x + 36;
+    const rightX = panel.x + 506;
+    const sectionY = panel.y + 112;
+    const lineGap = 31;
+
+    const drawGuideSection = (x, y, title, lines) => {
+      fill(226, 137, 61);
+      textStyle(BOLD);
+      textSize(16);
+      text(title, x, y);
+      textStyle(NORMAL);
+      textSize(13.5);
+      textLeading(20);
+      fill(82, 58, 39);
+      for(let i = 0; i < lines.length; i++){
+        const item = lines[i];
+        fill(226, 137, 61);
+        circle(x + 6, y + 38 + i * lineGap + 7, 6);
+        fill(82, 58, 39);
+        text(item, x + 18, y + 34 + i * lineGap, 400, 28);
+      }
+    };
+
+    drawGuideSection(leftX, sectionY, "클립 배치와 선택", [
+      "트랙 빈 공간 더블클릭: 해당 효과음 클립 추가",
+      "클립 한 번 클릭: 선택 · 빈 공간 드래그: 여러 클립 선택",
+      "클립을 왼쪽 버튼으로 누른 채 좌우로 끌어 위치 이동",
+      "클립 오른쪽 클릭: 개별 효과 편집창 열기",
+      "트랙 이름 클릭: 원본 사운드 한 번 미리듣기",
+      "Delete / Backspace: 선택한 효과음 클립 삭제"
+    ]);
+
+    drawGuideSection(rightX, sectionY, "재생과 타임라인", [
+      "상단 BGM 버튼: 기본 BGM과 귀여운 BGM 중 하나 선택",
+      "시간 눈금 클릭: 재생바를 해당 위치로 즉시 이동",
+      "재생 또는 Space: 재생 · 정지: 현재 위치에서 멈춤",
+      "마우스 휠: 트랙 위아래 이동",
+      "Shift + 휠 또는 가로 −/+: 시간 확대·축소",
+      "세로 −/+: 트랙 높이 확대·축소"
+    ]);
+
+    drawGuideSection(leftX, sectionY + 230, "편집과 자르기", [
+      "선택한 클립 위에 재생바를 놓고 Ctrl + C: 두 클립으로 자르기",
+      "Ctrl + Z: 직전의 배치·이동·삭제·자르기·효과·음소거/솔로 작업 되돌리기",
+      "M: 해당 트랙 음소거 · S: 해당 트랙만 듣기",
+      "트랙 볼륨 슬라이더: 트랙 전체 소리 크기 조절"
+    ]);
+
+    drawGuideSection(rightX, sectionY + 230, "완성과 초기화", [
+      "확정: 현재 만든 소리를 나만의 음악으로 최종 확정",
+      "확인창에서 예: 마지막 감상 화면 · 아니오: 계속 편집",
+      "초기화: BGM을 제외한 클립·음소거·솔로·볼륨 초기화",
+      "안내 버튼: 이 안내 화면 다시 열기"
+    ]);
+    pop();
+
+    this.guideCloseRect = { x: panel.x + panel.w - 150, y: panel.y + panel.h - 54, w: 116, h: 34 };
+    drawSoftButton(this.guideCloseRect.x, this.guideCloseRect.y, this.guideCloseRect.w, this.guideCloseRect.h, "닫기");
+  };
+
+MixerUI.prototype.handleGuideMousePressed = function() {
+    if(this.guideCloseRect && pointInRect(mouseX, mouseY, this.guideCloseRect.x, this.guideCloseRect.y, this.guideCloseRect.w, this.guideCloseRect.h)){
+      this.showGuideBanner = false;
+    }
+    return false;
+  };
+
+
+MixerUI.prototype.requestFinishConfirmation = function() {
+    this.stopTransport(false);
+    this.soundManager.stopAll();
+    this.showFinishConfirm = true;
+    this.finishConfirmYesRect = null;
+    this.finishConfirmNoRect = null;
+  };
+
+MixerUI.prototype.cancelFinishConfirmation = function() {
+    this.showFinishConfirm = false;
+    this.finishConfirmYesRect = null;
+    this.finishConfirmNoRect = null;
+  };
+
+MixerUI.prototype.drawFinishConfirmation = function() {
+    push();
+    noStroke();
+    fill(0, 178);
+    rect(0, 0, width, height);
+    pop();
+
+    const panel = { x: width / 2 - 270, y: height / 2 - 145, w: 540, h: 290 };
+    drawPanel(panel.x, panel.y, panel.w, panel.h, "FINAL CONFIRM");
+
+    push();
+    fill(67, 45, 29);
+    textAlign(CENTER, CENTER);
+    textStyle(BOLD);
+    textSize(23);
+    text("나만의 음악으로 확정하시겠습니까?", width / 2, panel.y + 94);
+    textStyle(NORMAL);
+    textSize(14);
+    fill(103, 72, 47);
+    text("예를 누르면 마지막 감상 화면으로 이동합니다.", width / 2, panel.y + 137);
+    text("아니오를 누르면 현재 편집 화면으로 돌아갑니다.", width / 2, panel.y + 162);
+    pop();
+
+    this.finishConfirmYesRect = { x: panel.x + 94, y: panel.y + 210, w: 150, h: 42 };
+    this.finishConfirmNoRect = { x: panel.x + panel.w - 244, y: panel.y + 210, w: 150, h: 42 };
+    drawSoftButton(this.finishConfirmYesRect.x, this.finishConfirmYesRect.y, this.finishConfirmYesRect.w, this.finishConfirmYesRect.h, "예", false);
+    drawSoftButton(this.finishConfirmNoRect.x, this.finishConfirmNoRect.y, this.finishConfirmNoRect.w, this.finishConfirmNoRect.h, "아니오", false);
+  };
+
+MixerUI.prototype.handleFinishConfirmationMousePressed = function() {
+    if(this.finishConfirmYesRect && pointInRect(mouseX, mouseY, this.finishConfirmYesRect.x, this.finishConfirmYesRect.y, this.finishConfirmYesRect.w, this.finishConfirmYesRect.h)){
+      this.cancelFinishConfirmation();
+      this.finishMix();
+      return true;
+    }
+    if(this.finishConfirmNoRect && pointInRect(mouseX, mouseY, this.finishConfirmNoRect.x, this.finishConfirmNoRect.y, this.finishConfirmNoRect.w, this.finishConfirmNoRect.h)){
+      this.cancelFinishConfirmation();
+      return true;
+    }
+    return true;
+  };
+
+MixerUI.prototype.requestResetConfirmation = function() {
+    this.stopTransport(false);
+    this.soundManager.stopAll();
+    this.showResetConfirm = true;
+    this.resetConfirmYesRect = null;
+    this.resetConfirmNoRect = null;
+  };
+
+MixerUI.prototype.cancelResetConfirmation = function() {
+    this.showResetConfirm = false;
+    this.resetConfirmYesRect = null;
+    this.resetConfirmNoRect = null;
+  };
+
+MixerUI.prototype.drawResetConfirmation = function() {
+    push();
+    noStroke();
+    fill(0, 158);
+    rect(0, 0, width, height);
+    pop();
+
+    const panel = { x: width / 2 - 230, y: height / 2 - 112, w: 460, h: 224 };
+    drawPanel(panel.x, panel.y, panel.w, panel.h, "RESET CONFIRM");
+
+    push();
+    fill(67, 45, 29);
+    textAlign(CENTER, CENTER);
+    textStyle(BOLD);
+    textSize(21);
+    text("리셋하시겠습니까?", width / 2, panel.y + 76);
+    textStyle(NORMAL);
+    textSize(14);
+    fill(103, 72, 47);
+    text("BGM을 제외한 모든 사운드 요소가 삭제됩니다.", width / 2, panel.y + 116);
+    pop();
+
+    this.resetConfirmYesRect = { x: panel.x + 74, y: panel.y + 158, w: 132, h: 38 };
+    this.resetConfirmNoRect = { x: panel.x + panel.w - 206, y: panel.y + 158, w: 132, h: 38 };
+    drawSoftButton(this.resetConfirmYesRect.x, this.resetConfirmYesRect.y, this.resetConfirmYesRect.w, this.resetConfirmYesRect.h, "예", false);
+    drawSoftButton(this.resetConfirmNoRect.x, this.resetConfirmNoRect.y, this.resetConfirmNoRect.w, this.resetConfirmNoRect.h, "아니오", false);
+  };
+
+MixerUI.prototype.handleResetConfirmationMousePressed = function() {
+    if(this.resetConfirmYesRect && pointInRect(mouseX, mouseY, this.resetConfirmYesRect.x, this.resetConfirmYesRect.y, this.resetConfirmYesRect.w, this.resetConfirmYesRect.h)){
+      this.cancelResetConfirmation();
+      this.pushUndoState("reset");
+      this.resetMix();
+      return true;
+    }
+    if(this.resetConfirmNoRect && pointInRect(mouseX, mouseY, this.resetConfirmNoRect.x, this.resetConfirmNoRect.y, this.resetConfirmNoRect.w, this.resetConfirmNoRect.h)){
+      this.cancelResetConfirmation();
+      return true;
+    }
+    return true;
+  };
+
 MixerUI.prototype.drawBgmSelector = function() {
     this.bgmButtonRects = [];
+    const options = this.soundManager && Array.isArray(this.soundManager.bgmOptions) ? this.soundManager.bgmOptions : [];
+    const labels = ["기본 BGM", "귀여운 BGM"];
+    const x = 630;
+    const y = 18;
+    const w = 142;
+    const h = 34;
+    const gap = 8;
+
+    for(let i = 0; i < Math.min(options.length, 2); i++){
+      const rectInfo = { x: x + i * (w + gap), y, w, h };
+      this.bgmButtonRects.push(rectInfo);
+      const active = this.soundManager.selectedBgmIndex === i;
+      const option = options[i];
+      const label = option && option.loading ? `${labels[i]} 로딩 중` : labels[i];
+      drawSoftButton(rectInfo.x, rectInfo.y, rectInfo.w, rectInfo.h, label, active);
+    }
   };
 
 MixerUI.prototype.fitText = function(value, maxWidthValue) {
@@ -1354,9 +2346,13 @@ MixerUI.prototype.drawClipWaveform = function(track, clip, rectInfo, grid) {
     const visibleY2 = min(rectInfo.y + rectInfo.h - 1, grid.laneBottomY - 1);
     if(visibleX2 <= visibleX1 || visibleY2 <= visibleY1) return;
 
-    const fileDuration = track.getSourceDurationSeconds ? track.getSourceDurationSeconds() : clip.lengthSeconds;
-    const safeRate = Math.max(0.1, Math.abs(clip.rate || 1));
-    const sourceEndRatio = clamp((clip.lengthSeconds * safeRate) / Math.max(0.001, fileDuration), 0.02, 1);
+    const bounds = track.getClipSourceBounds ? track.getClipSourceBounds(clip) : {
+      fileDuration: Math.max(0.02, clip.lengthSeconds),
+      startSec: 0,
+      endSec: Math.max(0.02, clip.lengthSeconds)
+    };
+    const sourceStartRatio = clamp(bounds.startSec / Math.max(0.001, bounds.fileDuration), 0, 1);
+    const sourceEndRatio = clamp(bounds.endSec / Math.max(0.001, bounds.fileDuration), 0, 1);
     const peakCount = Math.max(256, int(rectInfo.w * 2.6));
     const peaks = track.getPeaks(peakCount);
 
@@ -1373,7 +2369,9 @@ MixerUI.prototype.drawClipWaveform = function(track, clip, rectInfo, grid) {
     const samplePeak = x => {
       if(peaks.length <= 1 || maxPeak <= 0.0001 || right <= left) return 0;
       const timelineRatio = clamp((x - left) / (right - left), 0, 1);
-      const sourceRatio = clip.reverseMode ? 1 - timelineRatio * sourceEndRatio : timelineRatio * sourceEndRatio;
+      const sourceRatio = clip.reverseMode
+        ? lerp(sourceEndRatio, sourceStartRatio, timelineRatio)
+        : lerp(sourceStartRatio, sourceEndRatio, timelineRatio);
       const rawIndex = clamp(sourceRatio * (peaks.length - 1), 0, peaks.length - 1);
       const indexA = Math.floor(rawIndex);
       const indexB = Math.min(peaks.length - 1, indexA + 1);
@@ -1520,46 +2518,95 @@ MixerUI.prototype.drawClipEditWindow = function() {
     if(!track || !clip) return;
 
     const modal = this.getClipEditWindowRect();
+    const controlW = 500;
+    const helpX = modal.x + 600;
+    const helpW = modal.w - 636;
     push();
     noStroke();
     fill(0, 155);
     rect(0, 0, width, height);
     pop();
 
-    drawPanel(modal.x, modal.y, modal.w, modal.h, "CLIP EDIT");
+    drawPanel(modal.x, modal.y, modal.w, modal.h, "클립 편집");
 
     push();
     fill(61, 42, 28);
     textAlign(LEFT, CENTER);
     textStyle(BOLD);
-    textSize(20);
-    text(`${track.name} · ${this.formatTime(clip.startTimeSec)}`, modal.x + 28, modal.y + 68);
+    textSize(19);
+    text(`${track.name} · ${this.formatTime(clip.startTimeSec)}`, modal.x + 28, modal.y + 62);
     fill(track.color[0], track.color[1], track.color[2]);
-    rect(modal.x + modal.w - 112, modal.y + 64, 62, 28, 8);
+    rect(modal.x + modal.w - 112, modal.y + 58, 62, 28, 8);
     pop();
 
     this.sliderDefs = [
-      { label: "Volume", prop: "volume", min: 0, max: 1, x: modal.x + 44, y: modal.y + 126, w: modal.w - 88 },
-      { label: track.isBgm ? "BGM Rate / Pitch" : "Rate / Pitch", prop: "rate", min: 0.5, max: 1.8, x: modal.x + 44, y: modal.y + 176, w: modal.w - 88 },
-      { label: "Pan", prop: "panValue", min: -1, max: 1, x: modal.x + 44, y: modal.y + 226, w: modal.w - 88 },
-      { label: "Low Pass", prop: "lowPassFreq", min: 400, max: 10000, x: modal.x + 44, y: modal.y + 276, w: modal.w - 88 },
-      { label: "Delay", prop: "delayWet", min: 0, max: 0.85, x: modal.x + 44, y: modal.y + 326, w: modal.w - 88 },
-      { label: "Reverb", prop: "reverbWet", min: 0, max: 0.85, x: modal.x + 44, y: modal.y + 376, w: modal.w - 88 }
+      { label: "볼륨", prop: "volume", min: 0, max: 1, x: modal.x + 44, y: modal.y + 116, w: controlW },
+      { label: track.isBgm ? "BGM 속도 / 음높이" : "속도 / 음높이", prop: "rate", min: 0.5, max: 1.8, x: modal.x + 44, y: modal.y + 158, w: controlW },
+      { label: "좌우 위치", prop: "panValue", min: -1, max: 1, x: modal.x + 44, y: modal.y + 200, w: controlW },
+      { label: "저역 통과 필터", prop: "lowPassFreq", min: 400, max: 10000, x: modal.x + 44, y: modal.y + 242, w: controlW },
+      { label: "딜레이", prop: "delayWet", min: 0, max: 0.85, x: modal.x + 44, y: modal.y + 284, w: controlW },
+      { label: "리버브", prop: "reverbWet", min: 0, max: 0.85, x: modal.x + 44, y: modal.y + 326, w: controlW }
     ];
-
-    if(!track.isBgm){
-      const lengthMax = clamp(track.getSourceDurationSeconds() / Math.max(0.1, Math.abs(clip.rate || 1)), 0.35, POST_EDIT_MAX_TIMELINE_SECONDS);
-      this.sliderDefs.push({ label: "Length", prop: "lengthSeconds", min: Math.min(0.25, lengthMax), max: lengthMax, x: modal.x + 44, y: modal.y + 426, w: modal.w - 88 });
-    }
 
     for(const def of this.sliderDefs){
       this.drawSlider(def, clip[def.prop]);
     }
 
-    this.drawToggle(modal.x + 44, modal.y + 456, modal.w - 88, 36, "Reverse", clip.reverseMode);
+    this.drawToggle(modal.x + 44, modal.y + 386, controlW, 34, "역재생", clip.reverseMode);
 
-    drawSoftButton(modal.x + modal.w - 248, modal.y + modal.h - 52, 96, 34, "CLOSE");
-    drawSoftButton(modal.x + modal.w - 140, modal.y + modal.h - 52, 96, 34, "DONE");
+    if(!track.isBgm){
+      push();
+      fill(92, 65, 43);
+      textAlign(LEFT, CENTER);
+      textStyle(BOLD);
+      textSize(12.5);
+      text(`클립 길이  ${nf(clip.lengthSeconds, 1, 2)} s`, modal.x + 44, modal.y + 444);
+      textStyle(NORMAL);
+      fill(112, 82, 55);
+      textSize(11.5);
+      text("메인 화면에서 클립 선택 → 재생바 이동 → Ctrl + C로 자르기", modal.x + 44, modal.y + 470);
+      pop();
+    }
+
+    push();
+    noStroke();
+    fill(247, 235, 214);
+    rect(helpX, modal.y + 96, helpW, 452, 14);
+    fill(69, 48, 32);
+    textAlign(LEFT, TOP);
+    textStyle(BOLD);
+    textSize(15);
+    text("효과 설명", helpX + 18, modal.y + 112);
+
+    const helpItems = [
+      ["볼륨", "선택한 클립의 소리 크기를 조절합니다."],
+      ["속도 / 음높이", "재생 속도와 음높이를 함께 바꿉니다. 1.00이 원본입니다."],
+      ["좌우 위치", "소리가 들리는 위치를 왼쪽(-) 또는 오른쪽(+)으로 이동합니다."],
+      ["저역 통과 필터", "고음역을 줄여 소리를 부드럽거나 먹먹하게 만듭니다."],
+      ["딜레이", "원래 소리 뒤에 시간차를 둔 반복음을 추가합니다."],
+      ["리버브", "방이나 공간에서 울리는 듯한 잔향을 추가합니다."],
+      ["역재생", "소리를 뒤에서 앞으로 재생합니다."],
+      ["자르기", "메인 화면에서 Ctrl + C를 눌러 재생바 위치에서 클립을 나눕니다."]
+    ];
+
+    let helpY = modal.y + 144;
+    for(const item of helpItems){
+      fill(101, 67, 41);
+      textStyle(BOLD);
+      textSize(12.5);
+      text(item[0], helpX + 18, helpY);
+      fill(92, 70, 51);
+      textStyle(NORMAL);
+      textSize(11.3);
+      textLeading(15);
+      text(item[1], helpX + 18, helpY + 17, helpW - 36, 36);
+      helpY += 50;
+    }
+    pop();
+
+    const previewing = track && typeof track.isAnyVoicePlaying === "function" && track.isAnyVoicePlaying();
+    drawSoftButton(modal.x + 44, modal.y + modal.h - 50, 148, 34, previewing ? "미리듣기 정지" : "미리듣기");
+    drawSoftButton(modal.x + modal.w - 140, modal.y + modal.h - 50, 96, 34, "닫기");
   };
 
 MixerUI.prototype.drawSlider = function(def, value) {
@@ -1605,7 +2652,7 @@ MixerUI.prototype.formatValue = function(def, value) {
     if(def.prop === "rate") return `${nf(value, 1, 2)} x`;
     if(def.prop === "lowPassFreq") return `${int(value)} Hz`;
     if(def.prop === "panValue") return nf(value, 1, 2);
-    if(def.prop === "lengthSeconds") return `${nf(value, 1, 2)} s`;
+    if(def.prop === "lengthSeconds" || def.prop === "trimStartSec" || def.prop === "trimEndSec") return `${nf(value, 1, 2)} s`;
     return nf(value, 1, 2);
   };
 
@@ -1629,11 +2676,26 @@ MixerUI.prototype.getTrackVolumeSliderRect = function(trackIndex, grid = this.ge
   };
 
 MixerUI.prototype.getClipEditWindowRect = function() {
-    return { x: 360, y: 66, w: 560, h: 560 };
+    return { x: 150, y: 24, w: 980, h: 672 };
   };
 
 MixerUI.prototype.mousePressed = function() {
     if(this.soundManager.tracks.length === 0) return;
+
+    if(this.showFinishConfirm){
+      this.handleFinishConfirmationMousePressed();
+      return false;
+    }
+
+    if(this.showResetConfirm){
+      this.handleResetConfirmationMousePressed();
+      return false;
+    }
+
+    if(this.showGuideBanner){
+      this.handleGuideMousePressed();
+      return false;
+    }
 
     if(mouseButton === RIGHT){
       this.handleRightClick();
@@ -1658,7 +2720,20 @@ MixerUI.prototype.mousePressed = function() {
       return;
     }
     if(pointInRect(mouseX, mouseY, 318, 18, 100, 34)){
-      this.finishMix();
+      this.requestFinishConfirmation();
+      return;
+    }
+    if(pointInRect(mouseX, mouseY, 430, 18, 92, 34)){
+      this.requestResetConfirmation();
+      return;
+    }
+    if(pointInRect(mouseX, mouseY, 534, 18, 82, 34)){
+      this.showGuideBanner = true;
+      return;
+    }
+    const bgmButtonIndex = this.getBgmButtonIndexAtMouse();
+    if(bgmButtonIndex !== -1){
+      this.selectBgmOption(bgmButtonIndex);
       return;
     }
     if(pointInRect(mouseX, mouseY, 1068, 19, 32, 30)){
@@ -1678,7 +2753,6 @@ MixerUI.prototype.mousePressed = function() {
       return;
     }
 
-    if(this.beginPlayheadDrag()) return;
     if(this.beginScrollbarDrag()) return;
 
     const trackControl = this.getTrackControlAtMouse();
@@ -1689,13 +2763,20 @@ MixerUI.prototype.mousePressed = function() {
 
     const clipHit = this.getClipAtMouse();
     if(clipHit){
-      this.setSingleSelection(clipHit.trackIndex, clipHit.clip.uid);
+      if(clipHit.track.isBgm){
+        this.setSingleSelection(clipHit.trackIndex, clipHit.clip.uid);
+      } else {
+        this.beginClipDrag(clipHit);
+      }
       return;
     }
+
+    if(this.beginPlayheadDrag()) return;
 
     const sourceIndex = this.getSourceIndexAtMouse();
     if(sourceIndex !== -1){
       this.focusTrackInArrangement(sourceIndex);
+      this.previewSourceAt(sourceIndex);
       return;
     }
 
@@ -1712,15 +2793,27 @@ MixerUI.prototype.getBgmButtonIndexAtMouse = function() {
   };
 
 MixerUI.prototype.selectBgmOption = function(index) {
+    if(index === this.soundManager.selectedBgmIndex) return;
+    const undoState = this.captureUndoState();
     const wasPlaying = this.isPlaying;
+    const resumeTime = this.currentTimePositionSec;
     if(wasPlaying) this.stopTransport(false);
     const track = this.soundManager.selectBgmOption(index);
     if(track){
+      this.pushUndoState("bgm-change", undoState);
       this.syncTimelineToBgm(true);
       this.selectedTrackIndex = 0;
       this.selectedClipUid = track.clips[0] ? track.clips[0].uid : null;
       this.selectedClipUids = this.selectedClipUid ? [this.selectedClipUid] : [];
       this.verticalScrollPx = 0;
+      this.soundManager.flashMessage(index === 1 ? "귀여운 BGM을 선택했습니다." : "기본 BGM을 선택했습니다.");
+      if(wasPlaying){
+        this.currentTimePositionSec = clamp(resumeTime, 0, Math.max(0, this.totalSeconds - 0.01));
+        this.startTransport();
+      }
+    } else if(wasPlaying){
+      this.currentTimePositionSec = resumeTime;
+      this.startTransport();
     }
   };
 
@@ -1730,16 +2823,114 @@ MixerUI.prototype.handleTrackControlMousePressed = function(control) {
     this.selectedTrackIndex = control.trackIndex;
 
     if(control.type === "mute"){
+      this.pushUndoState("mute");
       track.toggleMute();
+      this.refreshTrackAudibility();
       return;
     }
     if(control.type === "solo"){
+      this.pushUndoState("solo");
       track.toggleSolo();
+      this.refreshTrackAudibility();
       return;
     }
     if(control.type === "volume"){
+      this.pushUndoState("track-volume");
       this.draggingTrackVolume = { trackIndex: control.trackIndex };
       this.updateTrackVolumeByMouse(control.trackIndex);
+    }
+  };
+
+MixerUI.prototype.beginClipDrag = function(clipHit) {
+    if(!clipHit || !clipHit.track || !clipHit.clip || clipHit.track.isBgm) return false;
+
+    if(!this.isClipSelected(clipHit.clip.uid)){
+      this.setSingleSelection(clipHit.trackIndex, clipHit.clip.uid);
+    }
+
+    const selectedIds = this.selectedClipUids.length > 0 ? [...this.selectedClipUids] : [clipHit.clip.uid];
+    const items = [];
+    for(let trackIndex = 0; trackIndex < this.soundManager.tracks.length; trackIndex++){
+      const track = this.soundManager.tracks[trackIndex];
+      if(track.isBgm) continue;
+      for(const uid of selectedIds){
+        const clip = track.getClipByUid(uid);
+        if(clip){
+          items.push({ trackIndex, track, clip, originalStartTimeSec: clip.startTimeSec });
+        }
+      }
+    }
+    if(items.length === 0) return false;
+
+    this.draggingClips = {
+      startMouseX: mouseX,
+      anchorOriginalStartTimeSec: clipHit.clip.startTimeSec,
+      items,
+      undoState: this.captureUndoState(),
+      moved: false
+    };
+    return true;
+  };
+
+MixerUI.prototype.updateClipDrag = function() {
+    const drag = this.draggingClips;
+    if(!drag || !Array.isArray(drag.items) || drag.items.length === 0) return;
+
+    const pixelDelta = mouseX - drag.startMouseX;
+    if(!drag.moved && Math.abs(pixelDelta) < 4) return;
+    drag.moved = true;
+
+    const rawAnchor = drag.anchorOriginalStartTimeSec + pixelDelta / Math.max(1, this.pixelsPerSecond);
+    const snappedAnchor = this.snapTime(rawAnchor);
+    let delta = snappedAnchor - drag.anchorOriginalStartTimeSec;
+    const minStart = Math.min(...drag.items.map(item => item.originalStartTimeSec));
+    const maxEnd = Math.max(...drag.items.map(item => item.originalStartTimeSec + item.clip.lengthSeconds));
+    delta = clamp(delta, -minStart, Math.max(-minStart, this.totalSeconds - maxEnd));
+
+    for(const item of drag.items){
+      item.clip.startTimeSec = item.originalStartTimeSec + delta;
+    }
+  };
+
+MixerUI.prototype.finishClipDrag = function() {
+    const drag = this.draggingClips;
+    this.draggingClips = null;
+    if(!drag || !drag.moved) return false;
+
+    const touchedTracks = new Set();
+    for(const item of drag.items){
+      touchedTracks.add(item.track);
+    }
+    for(const track of touchedTracks){
+      track.clips.sort((a, b) => a.startTimeSec - b.startTimeSec || (a.zIndex || 0) - (b.zIndex || 0));
+      track.saveClips();
+    }
+
+    this.pushUndoState("clip-move", drag.undoState);
+    if(this.isPlaying) this.refreshTransportAfterTimelineEdit();
+    this.soundManager.flashMessage("선택한 클립의 위치를 옮겼습니다.");
+    return true;
+  };
+
+MixerUI.prototype.refreshTransportAfterTimelineEdit = function() {
+    if(!this.isPlaying) return;
+    const resumeTime = clamp(this.currentTimePositionSec, 0, Math.max(0, this.totalSeconds - 0.01));
+    this.soundManager.stopAll();
+    this.playedClipIds.clear();
+    this.activeEffectTracks.clear();
+    this.currentTimePositionSec = resumeTime;
+    this.lastTimePositionSec = resumeTime;
+    this.playStartTimeSec = resumeTime;
+    this.playStartMillis = millis();
+    this.triggerClipsAlreadyUnderPlayhead(resumeTime);
+  };
+
+MixerUI.prototype.handleClipAddedDuringPlayback = function(track, clip) {
+    if(!this.isPlaying || !track || !clip || !this.isTrackAudible(track)) return;
+    const now = this.currentTimePositionSec;
+    this.playedClipIds.delete(clip.uid);
+    if(clip.startTimeSec <= now && clip.endTimeSec > now){
+      this.triggerClipEvents([{ track, clip, offset: now - clip.startTimeSec }], now);
     }
   };
 
@@ -1767,8 +2958,10 @@ MixerUI.prototype.doubleClicked = function() {
       if(track.clips[0]) this.setSingleSelection(laneIndex, track.clips[0].uid);
       return false;
     }
+    this.pushUndoState("clip-add");
     const clip = track.createClip(this.snapTime(rawTime));
     this.setSingleSelection(laneIndex, clip.uid);
+    this.handleClipAddedDuringPlayback(track, clip);
     return false;
   };
 
@@ -1784,6 +2977,9 @@ MixerUI.prototype.handleRightClick = function() {
 MixerUI.prototype.removeSelectedClip = function() {
     const ids = this.selectedClipUids.length > 0 ? [...this.selectedClipUids] : (this.selectedClipUid ? [this.selectedClipUid] : []);
     if(ids.length === 0) return;
+    const hasRemovableClip = ids.some(uid => this.soundManager.tracks.some(track => !track.isBgm && !!track.getClipByUid(uid)));
+    if(!hasRemovableClip) return;
+    this.pushUndoState("clip-delete");
 
     for(const uid of ids){
       for(const track of this.soundManager.tracks){
@@ -1799,6 +2995,22 @@ MixerUI.prototype.removeSelectedClip = function() {
     this.selectedClipUids = [];
   };
 
+MixerUI.prototype.toggleEditingClipPreview = function() {
+    const track = this.editingTrack;
+    const clip = this.editingClip;
+    if(!track || !clip || !track.soundFile) return;
+
+    const isPreviewing = typeof track.isAnyVoicePlaying === "function" && track.isAnyVoicePlaying();
+    if(isPreviewing){
+      track.stop();
+      return;
+    }
+
+    if(this.isPlaying) this.stopTransport(false);
+    else this.soundManager.stopAll();
+    track.previewClip(clip);
+  };
+
 MixerUI.prototype.handleEditWindowMousePressed = function() {
     const track = this.editingTrack;
     const clip = this.editingClip;
@@ -1810,24 +3022,27 @@ MixerUI.prototype.handleEditWindowMousePressed = function() {
       return;
     }
 
-    if(pointInRect(mouseX, mouseY, modal.x + modal.w - 248, modal.y + modal.h - 52, 96, 34)){
-      this.closeClipEditWindow();
+    if(pointInRect(mouseX, mouseY, modal.x + 44, modal.y + modal.h - 50, 148, 34)){
+      this.toggleEditingClipPreview();
       return;
     }
-    if(pointInRect(mouseX, mouseY, modal.x + modal.w - 140, modal.y + modal.h - 52, 96, 34)){
+
+    if(pointInRect(mouseX, mouseY, modal.x + modal.w - 140, modal.y + modal.h - 50, 96, 34)){
       this.closeClipEditWindow();
       return;
     }
 
     for(const def of this.sliderDefs){
       if(dist(mouseX, mouseY, clamp(mouseX, def.x, def.x + def.w), def.y) <= 20){
+        this.pushUndoState(`clip-${def.prop}`);
         this.draggingSlider = def;
         this.updateSliderByMouse(def);
         return;
       }
     }
 
-    if(pointInRect(mouseX, mouseY, modal.x + 44, modal.y + 456, modal.w - 88, 36)){
+    if(pointInRect(mouseX, mouseY, modal.x + 44, modal.y + 386, 500, 34)){
+      this.pushUndoState("clip-reverse");
       clip.reverseMode = !clip.reverseMode;
       track.saveClips();
       track.previewClip(clip);
@@ -1835,6 +3050,10 @@ MixerUI.prototype.handleEditWindowMousePressed = function() {
   };
 
 MixerUI.prototype.mouseDragged = function() {
+    if(this.draggingClips){
+      this.updateClipDrag();
+      return;
+    }
     if(this.draggingSlider){
       this.updateSliderByMouse(this.draggingSlider);
       return;
@@ -1857,6 +3076,9 @@ MixerUI.prototype.mouseDragged = function() {
   };
 
 MixerUI.prototype.mouseReleased = function() {
+    if(this.draggingClips){
+      this.finishClipDrag();
+    }
     if(this.isSelectingBox){
       this.finishMarqueeSelection();
     }
@@ -1873,15 +3095,18 @@ MixerUI.prototype.updateSliderByMouse = function(def) {
 
     const ratio = clamp((mouseX - def.x) / def.w, 0, 1);
     const value = def.min + ratio * (def.max - def.min);
-    track.setClipValue(clip.uid, def.prop, value);
+
+    if(def.prop === "trimStartSec" || def.prop === "trimEndSec"){
+      track.setClipTrimValue(clip.uid, def.prop, value);
+    } else {
+      track.setClipValue(clip.uid, def.prop, value);
+    }
 
     if(def.prop === "rate"){
-      if(track.isBgm){
-        this.syncTimelineToBgm(false);
-      } else {
-        const fitLength = clamp(track.getSourceDurationSeconds() / Math.max(0.1, Math.abs(clip.rate || 1)), 0.35, POST_EDIT_MAX_TIMELINE_SECONDS);
-        track.setClipValue(clip.uid, "lengthSeconds", fitLength);
-      }
+      if(track.isBgm) this.syncTimelineToBgm(false);
+    }
+
+    if(def.prop === "rate" || def.prop === "trimStartSec" || def.prop === "trimEndSec"){
       if(this.isPlaying){
         this.soundManager.stopAll();
         this.playedClipIds.clear();
@@ -1899,12 +3124,125 @@ MixerUI.prototype.updateTrackVolumeByMouse = function(trackIndex) {
     track.setMasterVolume(ratio);
   };
 
+MixerUI.prototype.getEditingPreviewSourcePosition = function() {
+    const track = this.editingTrack;
+    const clip = this.editingClip;
+    if(!track || !clip || track.isBgm || !track.soundFile) return null;
+    if(typeof track.soundFile.isPlaying !== "function" || !track.soundFile.isPlaying()) return null;
+    if(typeof track.soundFile.currentTime !== "function") return null;
+
+    const fileDuration = Math.max(0.02, track.getSourceDurationSeconds());
+    const bufferPosition = clamp(Number(track.soundFile.currentTime()) || 0, 0, fileDuration);
+    return clip.reverseMode ? fileDuration - bufferPosition : bufferPosition;
+  };
+
+MixerUI.prototype.setEditingTrimFromPreview = function(boundary) {
+    const track = this.editingTrack;
+    const clip = this.editingClip;
+    if(!track || !clip || track.isBgm) return false;
+
+    const sourcePosition = this.getEditingPreviewSourcePosition();
+    if(sourcePosition === null){
+      this.soundManager.flashMessage("PREVIEW 재생 중에 단축키를 사용하세요.");
+      return false;
+    }
+
+    const fileDuration = Math.max(0.02, track.getSourceDurationSeconds());
+    if(boundary === "start"){
+      track.setClipTrimValue(clip.uid, "trimStartSec", sourcePosition);
+      this.soundManager.flashMessage("현재 위치를 시작점으로 설정했습니다.");
+    } else {
+      track.setClipTrimValue(clip.uid, "trimEndSec", fileDuration - sourcePosition);
+      this.soundManager.flashMessage("현재 위치를 끝점으로 설정했습니다.");
+    }
+    track.stop();
+    return true;
+  };
+
+MixerUI.prototype.resetEditingClipTrim = function() {
+    const track = this.editingTrack;
+    const clip = this.editingClip;
+    if(!track || !clip || track.isBgm) return false;
+    track.stop();
+    track.resetClipTrim(clip.uid);
+    this.soundManager.flashMessage("클립 자르기를 초기화했습니다.");
+    return true;
+  };
+
+MixerUI.prototype.splitSelectedClipAtPlayhead = function() {
+    const targetUid = this.selectedClipUid || (this.selectedClipUids.length > 0 ? this.selectedClipUids[this.selectedClipUids.length - 1] : null);
+    if(!targetUid){
+      this.soundManager.flashMessage("자를 효과음 클립을 먼저 선택하세요.");
+      return false;
+    }
+
+    let targetTrack = null;
+    let targetTrackIndex = -1;
+    let targetClip = null;
+
+    for(let i = 0; i < this.soundManager.tracks.length; i++){
+      const clip = this.soundManager.tracks[i].getClipByUid(targetUid);
+      if(clip){
+        targetTrack = this.soundManager.tracks[i];
+        targetTrackIndex = i;
+        targetClip = clip;
+        break;
+      }
+    }
+
+    if(!targetTrack || !targetClip){
+      this.soundManager.flashMessage("선택한 클립을 찾을 수 없습니다.");
+      return false;
+    }
+    if(targetTrack.isBgm){
+      this.soundManager.flashMessage("BGM은 자를 수 없습니다.");
+      return false;
+    }
+
+    if(this.isPlaying) this.stopTransport(false);
+
+    const undoState = this.captureUndoState();
+    const result = targetTrack.splitClipAtTimelineTime(targetClip.uid, this.currentTimePositionSec);
+    if(!result){
+      this.soundManager.flashMessage("재생바를 선택한 클립의 안쪽에 놓아주세요.");
+      return false;
+    }
+
+    this.pushUndoState("clip-cut", undoState);
+    this.setSingleSelection(targetTrackIndex, result.rightClip.uid);
+    this.soundManager.flashMessage("재생바 위치에서 클립을 잘랐습니다.");
+    return true;
+  };
+
 MixerUI.prototype.keyPressed = function() {
     if(this.bpmInput && document.activeElement === this.bpmInput.elt){
       return true;
     }
+    const controlPressed = keyIsDown(CONTROL);
+    if(controlPressed && (key === "z" || key === "Z" || keyCode === 90)){
+      if(this.showFinishConfirm) this.cancelFinishConfirmation();
+      if(this.showResetConfirm) this.cancelResetConfirmation();
+      this.undoLastAction();
+      return false;
+    }
     if(keyCode === ESCAPE){
+      if(this.showFinishConfirm){
+        this.cancelFinishConfirmation();
+        return false;
+      }
+      if(this.showResetConfirm){
+        this.cancelResetConfirmation();
+        return false;
+      }
+      if(this.showGuideBanner){
+        this.showGuideBanner = false;
+        return false;
+      }
       if(this.editingClip) this.closeClipEditWindow();
+      return false;
+    }
+    if(!this.editingClip && controlPressed && (key === "c" || key === "C" || keyCode === 67)){
+      this.splitSelectedClipAtPlayhead();
       return false;
     }
     if(key === " "){
@@ -1946,30 +3284,28 @@ MixerUI.prototype.getKeyboardZoomAnchorX = function() {
 
 MixerUI.prototype.mouseWheel = function(event) {
     const grid = this.getGridLayout();
-    const overTimeline = pointInRect(mouseX, mouseY, grid.cellStartX, grid.playheadHandleY, grid.timelineInnerW, grid.scrollBarY - grid.playheadHandleY + 16);
-    if(!overTimeline) return true;
+    const overArrangement = pointInRect(mouseX, mouseY, grid.x + 14, grid.playheadHandleY, grid.w - 42, grid.scrollBarY - grid.playheadHandleY + 16);
+    if(!overArrangement) return true;
 
-    
     const nativeEvent = event && event.srcEvent ? event.srcEvent : event;
     const delta = nativeEvent && Number.isFinite(nativeEvent.deltaY) ? nativeEvent.deltaY : (event && Number.isFinite(event.delta) ? event.delta : 0);
-
-    
-    
     const isTrackpadPinch = !!(nativeEvent && (nativeEvent.ctrlKey || nativeEvent.metaKey));
+
     if(isTrackpadPinch){
       const multiplier = delta > 0 ? 0.88 : 1.12;
-      this.zoomBy(multiplier, mouseX);
+      this.zoomBy(multiplier, clamp(mouseX, grid.cellStartX, grid.timelineEndX));
       if(nativeEvent && typeof nativeEvent.preventDefault === "function") nativeEvent.preventDefault();
       return false;
     }
 
-    
-    if(keyIsDown(SHIFT) || keyIsDown(CONTROL)){
-      this.zoomBy(delta > 0 ? 0.9 : 1.1, mouseX);
+    if(keyIsDown(SHIFT)){
+      this.zoomBy(delta > 0 ? 0.9 : 1.1, clamp(mouseX, grid.cellStartX, grid.timelineEndX));
     } else {
-      this.timelineScrollSec += delta * 0.018;
-      this.clampScroll();
+      this.verticalScrollPx += delta * 0.85;
+      this.clampVerticalScroll();
     }
+
+    if(nativeEvent && typeof nativeEvent.preventDefault === "function") nativeEvent.preventDefault();
     return false;
   };
 
@@ -2161,9 +3497,9 @@ MixerUI.prototype.zoomVerticalBy = function(multiplier, anchorY = null) {
 
 MixerUI.prototype.previewSourceAt = function(trackIndex) {
     if(trackIndex < 0 || trackIndex >= this.soundManager.tracks.length) return;
-    this.soundManager.stopAll();
+    if(this.isPlaying) this.stopTransport(false);
+    else this.soundManager.stopAll();
     const track = this.soundManager.tracks[trackIndex];
-    if(!this.isTrackAudible(track)) return;
     track.previewSourceOnce();
   };
 
@@ -2195,6 +3531,8 @@ MixerUI.prototype.openClipEditWindow = function(trackIndex, clipUid) {
     const clip = track.getClipByUid(clipUid);
     if(!clip) return;
 
+    if(this.isPlaying) this.stopTransport(false);
+    else this.soundManager.stopAll();
     this.setSingleSelection(trackIndex, clipUid);
     this.editingTrackIndex = trackIndex;
     this.editingClipUid = clipUid;
@@ -2202,6 +3540,8 @@ MixerUI.prototype.openClipEditWindow = function(trackIndex, clipUid) {
   };
 
 MixerUI.prototype.closeClipEditWindow = function() {
+    const track = this.editingTrack;
+    if(track) track.stop();
     this.editingTrackIndex = -1;
     this.editingClipUid = null;
     this.draggingSlider = null;
@@ -2217,6 +3557,7 @@ MixerUI.prototype.finishMix = function() {
   };
 
 MixerUI.prototype.enterFinishScreen = function() {
+  this.editingSessionPrepared = false;
   this.closeClipEditWindow();
   this.hideBpmInput();
   this.stopTransport(false);
@@ -2224,12 +3565,7 @@ MixerUI.prototype.enterFinishScreen = function() {
   this.lastTimePositionSec = 0;
   this.timelineScrollSec = 0;
   this.clampScroll();
-  this.isPlaying = true;
-  this.playStartMillis = millis();
-  this.playStartTimeSec = 0;
-  this.playedClipIds.clear();
-  this.triggerClipsAlreadyUnderPlayhead(0);
-  this.lastMetronomeBeatIndex = 0;
+  this.startTransport();
 };
 
 MixerUI.prototype.finishMix = function() {
@@ -2286,20 +3622,116 @@ MixerUI.prototype.updateFinishScreen = function(time) {
   pop();
 };
 
+MixerUI.prototype.resetWholeGameToInitialState = function() {
+  this.stopTransport(true);
+  this.closeClipEditWindow();
+  this.clearStoredMixState();
+  this.prepareFreshEditingSession();
+  this.editingSessionPrepared = false;
+
+  if(typeof returnVideo !== "undefined" && returnVideo){
+    try{
+      returnVideo.stop();
+      returnVideo.time(0);
+    } catch(error){}
+  }
+
+  if(typeof player !== "undefined" && player){
+    player.x = width / 2;
+    player.y = height / 2;
+    player.vx = 0;
+    player.vy = 0;
+    player.lastAxis = "none";
+    player.prevPressed = {};
+    if(player.directions){
+      player.direction = player.directions.UP;
+      player.facing = player.directions.UP;
+    }
+    player.isMoving = false;
+    player.animationTimer = 0;
+    player.latestKey = -1;
+    player.visitedMap = {
+      BEDROOM: false,
+      KITCHEN: false,
+      OUTSIDE: false,
+      STREAM: false
+    };
+    if(player.inventory){
+      if(typeof player.inventory.clear === "function") player.inventory.clear();
+      player.inventory.selectedIndex = 0;
+    }
+    player.showInventory = false;
+    if(player.imgs && player.imgs.length > 0) player.img = player.imgs[0];
+    if(typeof player.updateCollider === "function") player.updateCollider();
+  }
+
+  try{ localStorage.removeItem("soundInventory"); } catch(error){}
+
+  if(typeof sceneObjects !== "undefined" && Array.isArray(sceneObjects)){
+    for(const sceneList of sceneObjects){
+      if(!Array.isArray(sceneList)) continue;
+      for(const object of sceneList){
+        if(!object) continue;
+        if(typeof SoundObject !== "undefined" && object instanceof SoundObject){
+          object.collected = false;
+        }
+        if(typeof object.deactivate === "function") object.deactivate();
+      }
+    }
+  }
+
+  if(typeof gameManager !== "undefined" && gameManager){
+    gameManager.textIndex = 0;
+    gameManager.inputTimer = gameManager.inputInterval;
+    gameManager.returnSceneTimer = 0;
+    gameManager.isOpening1VideoFinished = false;
+    gameManager.isOpening2VideoFinished = false;
+    gameManager.isIntroVideoFinished = false;
+    gameManager.isCallVideoFinished = false;
+    gameManager.isReturnVideo1Finished = false;
+    gameManager.isReturnVideo2Finished = false;
+    gameManager.isfading = false;
+    gameManager.fadeTimer = 0;
+    gameManager.fadeTime = 0;
+    gameManager.fadeImage = null;
+    if(typeof gameManager.changeState === "function" && typeof gameState !== "undefined"){
+      gameManager.changeState(gameState.START);
+    }
+  }
+
+  if(typeof isDebugMode !== "undefined") isDebugMode = false;
+  if(typeof debugButtons !== "undefined" && Array.isArray(debugButtons)){
+    for(const button of debugButtons){
+      if(button && typeof button.changeShowState === "function") button.changeShowState(false);
+    }
+  }
+  if(typeof mapButtons !== "undefined" && Array.isArray(mapButtons)){
+    for(const button of mapButtons){
+      if(button && typeof button.changeShowState === "function") button.changeShowState(false);
+    }
+  }
+  if(typeof mapButton !== "undefined" && mapButton && typeof mapButton.changeShowState === "function"){
+    mapButton.changeShowState(false);
+  }
+  if(typeof callButton !== "undefined" && callButton && typeof callButton.changeShowState === "function"){
+    callButton.changeShowState(false);
+  }
+  if(typeof startButton !== "undefined" && startButton && typeof startButton.changeShowState === "function"){
+    startButton.changeShowState(true);
+  }
+  if(typeof changeScene === "function" && typeof scenes !== "undefined"){
+    changeScene(scenes.EMPTY);
+  }
+};
+
 MixerUI.prototype.mousePressedFinishScreen = function() {
   const bx = width / 2 - 100;
   const by = height * 0.74;
   const bw = 200;
   const bh = 52;
   if(pointInRect(mouseX, mouseY, bx, by, bw, bh)){
-    this.stopTransport(true);
     this.hideBpmInput();
-    if(typeof gameManager !== "undefined" && gameManager && typeof gameManager.changeState === "function"){
-      gameManager.changeState(gameState.START);
-    }
-    if(typeof changeScene === "function" && typeof scenes !== "undefined"){
-      changeScene(scenes.EMPTY);
-    }
+    this.resetWholeGameToInitialState();
     return true;
   }
   return false;
