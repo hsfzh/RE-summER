@@ -36,6 +36,7 @@ let fadeTime = 3;
 // 객체들
 let startButton;
 let tutorialButton;
+let restartButton;
 let mapButton;
 let gameManager;
 let player;
@@ -155,6 +156,8 @@ function setup() {
   gameManager = new GameManager();
   startButton = new StartButton(width*0.62, height * 0.66, 270, 120);
   tutorialButton = new TutorialButton(width*0.38, height * 0.66, 270, 120);
+  restartButton = new RestartButton(width/2, height * 0.9, 170, 70);
+  restartButton.changeShowState(false);
   mapButton = new MapButton(0.16*width, 0.06*height, 100, 50);
   mapButton.changeShowState(false);
   callButton = new CallButton(0.88*width, 0.06*height, 100, 50, images.call_button);

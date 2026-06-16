@@ -64,6 +64,11 @@ class GameManager{
             videos.returnVideo.stop();
             videos.returnVideo.play();
         }
+        if(this.currentState === gameState.DOWNLOAD){
+            restartButton.changeShowState(true);
+        }else{
+            restartButton.changeShowState(false);
+        }
     }
     startFade(time, img = null, nextState = this.currentState){
         this.isfading = true;
