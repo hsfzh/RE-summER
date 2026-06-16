@@ -51,14 +51,8 @@ class StartButton extends Button{
         changeScene(scenes.INTRO);
         this.changeShowState(false);
         tutorialButton.changeShowState(false);
-        player.reset();
     }
     display(){
-        //push();
-        //translate(this.x, this.y);
-        //rectMode(CENTER);
-        //rect(0,0, 150, 60);
-        //pop();
     }
 }
 class TutorialButton extends Button{
@@ -78,11 +72,6 @@ class TutorialButton extends Button{
         if(this.pressed){
             showImage(images.tutorial, 0, width/2, height/2);
         }else{
-            //push();
-            //translate(this.x, this.y);
-            //rectMode(CENTER);
-            //rect(0,0, 100, 50);
-            //pop();
         }
     }
     changeShowState(state){
@@ -100,14 +89,6 @@ class OutsideButton extends Button{
         changeScene(scenes.OUTSIDE);
     }
     display(){
-        push();
-        translate(this.x, this.y);
-        rectMode(CENTER);
-        //rect(0, 0, this.sizeX, this.sizeY);
-        textAlign(CENTER, CENTER);
-        fill(0);
-        //text("야외", 0, 0);
-        pop();
     }
 }
 class BedroomButton extends Button{
@@ -119,14 +100,6 @@ class BedroomButton extends Button{
         changeScene(scenes.BEDROOM);
     }
     display(){
-        push();
-        translate(this.x, this.y);
-        rectMode(CENTER);
-        //rect(0, 0, this.sizeX, this.sizeY);
-        textAlign(CENTER, CENTER);
-        fill(0);
-        //text("안방", 0, 0);
-        pop();
     }
 }
 class KitchenButton extends Button{
@@ -138,14 +111,6 @@ class KitchenButton extends Button{
         changeScene(scenes.KITCHEN);
     }
     display(){
-        push();
-        translate(this.x, this.y);
-        rectMode(CENTER);
-        //rect(0, 0, this.sizeX, this.sizeY);
-        textAlign(CENTER, CENTER);
-        fill(0);
-        //text("부엌", 0, 0);
-        pop();
     }
 }
 class StreamButton extends Button{
@@ -157,14 +122,6 @@ class StreamButton extends Button{
         changeScene(scenes.STREAM);
     }
     display(){
-        push();
-        translate(this.x, this.y);
-        rectMode(CENTER);
-        //rect(0, 0, this.sizeX, this.sizeY);
-        textAlign(CENTER, CENTER);
-        fill(0);
-        //text("시냇가", 0, 0);
-        pop();
     }
 }
 class MapButton extends Button{
@@ -247,6 +204,8 @@ class CallYesButton extends Button{
     }
     performAction(){
         gameManager.startFade(fadeTime, images.map, gameState.CALLING);
+        postEditSoundFiles["main_bgm_source"].stop();
+        if(!call_sound.isPlaying()) call_sound.loop();
         changeScene(scenes.CALLING);
         this.parent.enter = false;
         this.parent.pressed = true;

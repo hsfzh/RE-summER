@@ -3603,11 +3603,11 @@ MixerUI.prototype.updateFinishScreen = function(time) {
   textAlign(CENTER, CENTER);
   textStyle(BOLD);
   textSize(30);
-  text("완성된 음악이 흘러나오고 있습니다", width / 2, height * 0.24);
+  text("완성된 음악이 흘러나오고 있습니다", width / 2, height * 0.23);
   textStyle(NORMAL);
   textSize(17);
   fill(255, 239, 205, 220);
-  text("그 여름의 소리가, 아직 여기 있다.", width / 2, height * 0.31);
+  text("그 여름의 소리가, 아직 여기 있다.", width / 2, height * 0.30);
   const bx = width / 2 - 100;
   const by = height * 0.74;
   const bw = 200;

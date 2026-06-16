@@ -33,6 +33,7 @@ class GameManager{
                 button.changeShowState(true);
             }
             mapButton.changeShowState(false);
+            if(!postEditSoundFiles["main_bgm_source"].isPlaying()) postEditSoundFiles["main_bgm_source"].loop();
         } else {
             for (let button of mapButtons){
                 button.changeShowState(false);
@@ -49,10 +50,17 @@ class GameManager{
             this.isOpening2VideoFinished = false;
             videos.openingVideo1.stop();
             videos.openingVideo1.play();
+            postEditSoundFiles["main_bgm_source"].stop();
+            if (soundManager.bgmOptions[1] && soundManager.bgmOptions[1].soundFile) {
+              soundManager.bgmOptions[1].soundFile.stop();
+            }
         }
         if (this.currentState === gameState.INTRO) {
             this.isIntroVideoFinished = false;
             videos.introVideo.stop();
+            if (soundManager.bgmOptions[1] && soundManager.bgmOptions[1].soundFile) {
+                soundManager.bgmOptions[1].soundFile.stop();
+            }
         }
         if (this.currentState === gameState.CALLING) {
             this.isCallVideoFinished = false;
@@ -63,6 +71,12 @@ class GameManager{
             this.isReturnVideo2Finished = false;
             videos.returnVideo.stop();
             videos.returnVideo.play();
+        }
+        if(this.currentState === gameState.EDITING){
+            postEditSoundFiles["main_bgm_source"].stop();
+            if (soundManager.bgmOptions[1] && soundManager.bgmOptions[1].soundFile) {
+              soundManager.bgmOptions[1].soundFile.stop();
+            }
         }
         if(this.currentState === gameState.DOWNLOAD){
             restartButton.changeShowState(true);
@@ -144,6 +158,10 @@ class GameManager{
                 startButton.changeShowState(true);
                 tutorialButton.changeShowState(true);
                 this.isOpening2VideoFinished = true;
+                if (soundManager.bgmOptions[1] &&
+                soundManager.bgmOptions[1].soundFile) {
+                    soundManager.bgmOptions[1].soundFile.loop();
+                }
             }
             showImage(videos.openingVideo2, 0, width / 2, height / 2);
         }
@@ -179,7 +197,7 @@ class GameManager{
         }
     }
     updateMapUI(time){
-    
+
     }
     updateCalling(time){
         if(this.textIndex < sceneObjects[scenes.CALLING].length){
@@ -191,6 +209,7 @@ class GameManager{
             }
             if(this.checkInput()){
                 this.textIndex += 1;
+                if(call_sound.isPlaying()) call_sound.stop();
                 if(this.textIndex == sceneObjects[scenes.CALLING].length){
                     for(let object of sceneObjects[scenes.CALLING]) 
                         object.deactivate();

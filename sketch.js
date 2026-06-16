@@ -73,6 +73,7 @@ let mixerUI;
 // 완성된 음악 다운 관련 변수
 let renderingResultUrl = ""; // file.io에서 받아온 다운로드 링크 주소 저장
 let qrCodeElement = null;    // 화면에 띄울 HTML QR코드 div 요소를 가리키는 변수
+let call_sound;
 
 function preload(){
   soundFormats("mp3", "m4a", "wav", "ogg");
@@ -106,6 +107,9 @@ function preload(){
   // 내 방
   images.my_room = loadImage("Resources/Images/my_room.png");
   images.my_room_radio = loadImage("Resources/Images/my_room_radio.png");
+
+  call_sound = loadSound("Resources/Sounds/call_sound.m4a");
+  call_sound.setVolume(2);
 
   //SOUND_LIBRARY.water.icon = loadImage("Resources/Images/icons_outside.png");
   //SOUND_LIBRARY.water.audio = loadSound("Resources/Sounds/knock.mp3");
