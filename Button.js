@@ -42,20 +42,7 @@ class RestartButton extends Button{
         this.changeShowState(false);
     }
     display(){
-        push();
-        translate(this.x, this.y);
-        rectMode(CENTER);
-        fill(this.ishovering ? color(255, 216, 137) : color(255, 239, 199));
-        if(this.ishovering){
-            rect(0, 0, this.sizeX * 1.1, this.sizeY * 1.1, 16);
-        } else{
-            rect(0, 0, this.sizeX, this.sizeY, 16);
-        }
-        textAlign(CENTER, CENTER);
-        textSize(this.ishovering? 17:14);
-        fill(58, 40, 26);
-        text("처음으로", 0, 0);
-        pop();
+        
     }
 }
 class StartButton extends Button{

@@ -3917,21 +3917,8 @@ MixerUI.prototype.updateDownloadScreen = function(time){
   this.updateTransport();
 
   // 2. 배경화면 연출 (엔딩 씬과 통일감을 주는 어두운 연출)
-  background(31, 27, 38);
-  
-  push();
-  noStroke();
-  // 라디오나 공간감 연출을 위한 가이드 원
-  fill(255, 190, 90, 15);
-  ellipse(width / 2, height / 2, 580, 580);
-  
-  // 가이드 패널 배치
-  fill(105, 72, 44);
-  rectMode(CENTER);
-  rect(width / 2, height / 2 + 20, 420, 360, 24);
-  fill(252, 244, 224);
-  rect(width / 2, height / 2 + 10, 380, 240, 16);
-  pop();
+  background(27, 37, 64);
+  showImage(images.qr_page, 0, width/2, height/2);
 
   // 3. 상태에 따른 상단 및 내부 텍스트 렌더링
   push();
@@ -3939,34 +3926,13 @@ MixerUI.prototype.updateDownloadScreen = function(time){
   textAlign(CENTER, CENTER);
   
   if (!renderingResultUrl) {
-    // 아직 file.io 서버로부터 링크를 받아오지 못한 경우 (업로드 중)
-    fill(255, 239, 205);
-    textStyle(BOLD);
-    textSize(30);
-    text("나만의 음악을 서버에 업로드하고 있습니다", width / 2, height * 0.22);
-    
+    // 아직 서버로부터 링크를 받아오지 못한 경우 (업로드 중)
     textStyle(NORMAL);
     textSize(16);
-    fill(255, 239, 205, 190);
-    text("잠시만 기다려주시면 QR 코드가 생성됩니다...", width / 2, height * 0.31);
-    
-    // 패널 내부 로딩 메시지
-    fill(101, 73, 48);
-    textStyle(BOLD);
-    textSize(18);
-    text("연결 링크 생성 중...", width / 2, height / 2 + 10);
+    fill(0);
+    text("로딩 중...", width / 2, height * 0.69);
   } else {
-    // file.io 연결 성공 및 URL 획득 완료 상태
-    fill(255, 239, 205);
-    textStyle(BOLD);
-    textSize(30);
-    text("스캔하여 오디오 파일을 다운로드하세요", width / 2, height * 0.22);
-    
-    textStyle(NORMAL);
-    textSize(16);
-    fill(255, 239, 205, 190);
-    text("아래 QR 코드를 스캔하시면 MP3 링크로 연결됩니다.", width / 2, height * 0.31);
-
+    // 연결 성공 및 URL 획득 완료 상태
     // QR 코드 주입 및 동적 정렬 제어
     if (!qrCodeElement) {
       // 1. QR 코드를 주입할 가상 HTML DOM Div 생성
@@ -3978,31 +3944,34 @@ MixerUI.prototype.updateDownloadScreen = function(time){
 
       // 2. 원하는 QR 코드 '중심'의 픽셀 좌표를 직접 지정 (예: 가로 640px, 세로 360px)
       const targetX = width/2; 
-      const targetY = height/2 + 10;
+      const targetY = height * 0.7;
 
       qrCodeElement.style.left = `${targetX}px`;
       qrCodeElement.style.top = `${targetY}px`;
 
-      // 3. [핵심] 상자 크기(가로세로 190px)의 딱 절반만큼 왼쪽, 위쪽으로 당겨서 
-      // 꼭짓점이 아닌 상자 '정중앙'이 targetX, targetY에 오도록 매직 넘버 고정
-      qrCodeElement.style.marginLeft = "-95px";
-      qrCodeElement.style.marginTop = "-95px";
+      //qrCodeElement.style.marginLeft = "-80px";
+      qrCodeElement.style.marginTop = "-54px";
 
-      // 4. 나머지 스타일 유지
+      // 3. 나머지 스타일
       qrCodeElement.style.zIndex = "1000";
       qrCodeElement.style.padding = "10px";
       qrCodeElement.style.background = "white";
       qrCodeElement.style.borderRadius = "12px";
       qrCodeElement.style.boxShadow = "0px 6px 20px rgba(0,0,0,0.4)";
       
-      document.body.appendChild(qrCodeElement);
+      const canvasElt = document.querySelector("canvas");
+      if (canvasElt && canvasElt.parentElement) {
+        canvasElt.parentElement.appendChild(qrCodeElement);
+      } else {
+        document.body.appendChild(qrCodeElement);
+      }
 
       // 3. qrcode.js 인스턴스 빌드 후 주소 연동
       new QRCode(qrCodeElement, {
         text: renderingResultUrl,
-        width: 170,
-        height: 170,
-        colorDark: "#4a331e", // 어두운 브라운 톤앤매너
+        width: 140,
+        height: 140,
+        colorDark: "#000000",
         colorLight: "#ffffff"
       });
     }

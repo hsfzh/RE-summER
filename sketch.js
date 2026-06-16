@@ -115,6 +115,7 @@ function preload(){
   for(const config of postEditSoundConfigs){
     postEditSoundFiles[config.id] = loadSound(config.file);
   }
+  images.qr_page = loadImage("Resources/Images/qr_page.png");
 
   SOUND_LIBRARY.bark.icon = loadImage("Resources/Images/icons/dog.png");
   SOUND_LIBRARY.bark.audio = loadSound("Resources/Sounds/bark.m4a");
@@ -156,7 +157,7 @@ function setup() {
   gameManager = new GameManager();
   startButton = new StartButton(width*0.62, height * 0.66, 270, 120);
   tutorialButton = new TutorialButton(width*0.38, height * 0.66, 270, 120);
-  restartButton = new RestartButton(width/2, height * 0.9, 170, 70);
+  restartButton = new RestartButton(width/2, height * 0.915, 150, 50);
   restartButton.changeShowState(false);
   mapButton = new MapButton(0.16*width, 0.06*height, 100, 50);
   mapButton.changeShowState(false);
