@@ -3619,6 +3619,17 @@ MixerUI.prototype.updateFinishScreen = function(time) {
   textStyle(BOLD);
   textSize(17);
   text("처음으로 돌아가기", width / 2, by + bh / 2);
+  const bx2 = width / 2 - 100;
+  const by2 = height * 0.84;
+  const bw2 = 200;
+  const bh2 = 52;
+  const hover2 = pointInRect(mouseX, mouseY, bx2, by2, bw2, bh2);
+  fill(hover2 ? color(255, 216, 137) : color(255, 239, 199));
+  rect(bx2, by2, bw2, bh2, 16);
+  fill(58, 40, 26);
+  textStyle(BOLD);
+  textSize(17);
+  text("나만의 소리 다운받기", width / 2, by2 + bh2 / 2);
   pop();
 };
 
@@ -3629,11 +3640,13 @@ MixerUI.prototype.resetWholeGameToInitialState = function() {
   this.prepareFreshEditingSession();
   this.editingSessionPrepared = false;
 
-  if(typeof returnVideo !== "undefined" && returnVideo){
-    try{
-      returnVideo.stop();
-      returnVideo.time(0);
-    } catch(error){}
+  for (let video of Object.values(videos)){
+    if(typeof video !== "undefined" && video){
+      try{
+        video.stop();
+        video.time(0);
+      } catch(error){}
+    }
   }
 
   if(typeof player !== "undefined" && player){
@@ -3722,6 +3735,11 @@ MixerUI.prototype.resetWholeGameToInitialState = function() {
   if(typeof changeScene === "function" && typeof scenes !== "undefined"){
     changeScene(scenes.EMPTY);
   }
+  if (qrCodeElement) {
+    qrCodeElement.remove();
+    qrCodeElement = null;
+  }
+  renderingResultUrl = "";
 };
 
 MixerUI.prototype.mousePressedFinishScreen = function() {
@@ -3734,5 +3752,259 @@ MixerUI.prototype.mousePressedFinishScreen = function() {
     this.resetWholeGameToInitialState();
     return true;
   }
+  const bx2 = width / 2 - 100;
+  const by2 = height * 0.84;
+  const bw2 = 200;
+  const bh2 = 52;
+  if(pointInRect(mouseX, mouseY, bx2, by2, bw2, bh2)){
+    this.hideBpmInput();
+    this.downloadSound();
+    gameManager.changeState(gameState.DOWNLOAD);
+    return true;
+  }
   return false;
+};
+
+MixerUI.prototype.downloadSound = async function(){
+  // 이미 생성 중이거나 결과가 있다면 중복 실행 방지
+  if (renderingResultUrl) {
+    this.soundManager.flashMessage("이미 QR 코드가 생성되었습니다.");
+    return;
+  }
+
+  this.soundManager.flashMessage("오디오 파일 렌더링 중...");
+  
+  try {
+    // 1. 오프라인 가상 오디오 컨텍스트에서 고속 합성
+    const audioBuffer = await this.renderAudioOffline(this.totalSeconds);
+    
+    // 2. 완성된 데이터를 MP3 바이너리(Blob)로 인코딩
+    this.soundManager.flashMessage("MP3 파일 압축 중...");
+    const mp3Blob = this.bufferToMp3(audioBuffer);
+    
+    // 3. 서버로 가상 파일 업로드
+    this.soundManager.flashMessage("공유 링크 생성 중...");
+    
+    const formData = new FormData();
+    formData.append("file", mp3Blob, `re_summer_${Date.now()}.mp3`);
+
+    // file.io 대신 tmpfiles.org API 사용 (CORS 에러가 덜 발생함)
+    const response = await fetch("https://tmpfiles.org/api/v1/upload", {
+      method: "POST",
+      body: formData
+    });
+    
+    if (!response.ok) throw new Error("서버 업로드 실패");
+    
+    const data = await response.json();
+    
+    // tmpfiles.org는 응답 구조가 다릅니다. (data.data.url 에 다운로드 주소가 옴)
+    if (data && data.data && data.data.url) {
+      // [핵심] 광고 페이지 주소를 파일 즉시 다운로드용 Direct 주소로 치환합니다.
+      // 예: https://tmpfiles.org/XXXXXX  ->  https://tmpfiles.org/dl/XXXXXX
+      const rawUrl = data.data.url;
+      const directUrl = rawUrl.replace("tmpfiles.org/", "tmpfiles.org/dl/");
+      
+      // 변환된 직행 주소를 전역 변수에 저장
+      renderingResultUrl = directUrl; 
+      this.soundManager.flashMessage("성공! 화면에 QR 코드가 생성됩니다.");
+    } else {
+      throw new Error("링크 생성 실패");
+    }
+
+  } catch (error) {
+    console.error("오디오 변환 또는 업로드 실패:", error);
+    this.soundManager.flashMessage("링크 생성에 실패했습니다.");
+  }
+};
+
+MixerUI.prototype.renderAudioOffline = async function(durationSeconds) {
+  const sampleRate = 44100;
+  const numberOfChannels = 2; // 스테레오
+  
+  // 가상의 렌더링용 오디오 컨텍스트 생성 (실제 소리가 귀로 들리지 않고 메모리에서 연산됨)
+  const offlineCtx = new OfflineAudioContext(numberOfChannels, sampleRate * Math.max(1, durationSeconds), sampleRate);
+
+  // 현재 믹서 UI에 등록된 모든 트랙 순회
+  for (const track of this.soundManager.tracks) {
+    if (track.muted || (this.hasSoloTrack() && !track.solo)) continue; // 음소거 및 솔로 트랙 반영
+    if (!track.soundFile || !track.soundFile.buffer) continue;
+    
+    const buffer = track.soundFile.buffer; // 원본 사운드 오디오 버퍼
+
+    for (const clip of track.clips) {
+      // 1. 소스 노드 생성 및 버퍼 지정
+      const bufferSource = offlineCtx.createBufferSource();
+      bufferSource.buffer = buffer;
+      bufferSource.playbackRate.value = clip.rate;
+
+      // 2. 개별 클립의 볼륨(Gain) 노드 설정 (트랙 마스터 볼륨 반영)
+      const gainNode = offlineCtx.createGain();
+      const baseVolume = (clip.volume ?? 1) * (track.masterVolume ?? 1);
+      gainNode.gain.value = baseVolume;
+
+      // 3. 개별 클립의 필터(LowPass) 노드 설정
+      const filterNode = offlineCtx.createBiquadFilter();
+      filterNode.type = "lowpass";
+      filterNode.frequency.value = clip.lowPassFreq ?? 10000;
+
+      // 4. 좌우 패닝(Panner) 노드 설정
+      const pannerNode = offlineCtx.createStereoPanner();
+      pannerNode.pan.value = clip.panValue ?? 0;
+
+      // 노드 연결: Source -> Filter -> Panner -> Gain -> Destination(최종 출력)
+      bufferSource.connect(filterNode);
+      filterNode.connect(pannerNode);
+      pannerNode.connect(gainNode);
+      gainNode.connect(offlineCtx.destination);
+
+      // 사용자가 배치한 오천 초(Timeline) 시간에 맞추어 가상 재생 시간 스케줄링
+      const startTime = clip.startTimeSec;
+      const duration = clip.lengthSeconds;
+      
+      // 클립의 소스 크롭(Trim) 연산 계산 알고리즘 반영
+      const bounds = track.getClipSourceBounds(clip);
+      const cueStart = clip.reverseMode ? bounds.endTrimSec : bounds.startSec;
+
+      // 가상 타임라인에서 재생 시작 명령 (재생 시작 시간, 원본 소스의 시작 지점, 재생할 기간)
+      bufferSource.start(offlineCtx.currentTime + startTime, cueStart, bounds.durationSec);
+    }
+  }
+
+  // 백그라운드 렌더링 실행 후 완성된 단일 통합 AudioBuffer 반환
+  return await offlineCtx.startRendering();
+};
+
+MixerUI.prototype.bufferToMp3 = function(audioBuffer) {
+  const leftChannel = audioBuffer.getChannelData(0);
+  const rightChannel = audioBuffer.getChannelData(1);
+  
+  // 2채널(스테레오), 44100Hz, 128kbps 비트레이트 설정
+  const mp3encoder = new lamejs.Mp3Encoder(2, audioBuffer.sampleRate, 128);
+  const mp3Data = [];
+
+  // Float32 데이터를 Int16 데이터 포맷으로 파싱 변환 (lamejs 인코더 규격)
+  const lp = new Int16Array(leftChannel.length);
+  const rp = new Int16Array(rightChannel.length);
+  for (let i = 0; i < leftChannel.length; i++) {
+    lp[i] = leftChannel[i] < 0 ? leftChannel[i] * 0x8000 : leftChannel[i] * 0x7FFF;
+    rp[i] = rightChannel[i] < 0 ? rightChannel[i] * 0x8000 : rightChannel[i] * 0x7FFF;
+  }
+
+  const sampleBlockSize = 1152;
+  for (let i = 0; i < lp.length; i += sampleBlockSize) {
+    const leftChunk = lp.subarray(i, i + sampleBlockSize);
+    const rightChunk = rp.subarray(i, i + sampleBlockSize);
+    const mp3buf = mp3encoder.encodeBuffer(leftChunk, rightChunk);
+    if (mp3buf.length > 0) mp3Data.push(mp3buf);
+  }
+  
+  const mp3buf = mp3encoder.flush();
+  if (mp3buf.length > 0) mp3Data.push(mp3buf);
+
+  return new Blob(mp3Data, { type: 'audio/mp3' });
+};
+
+MixerUI.prototype.updateDownloadScreen = function(time){
+  if(isDebugMode){
+    isDebugMode = false;
+    for(let button of debugButtons){
+      button.changeShowState(isDebugMode);
+    }
+    callButton.changeShowState(isDebugMode);
+  }
+  // 1. 오디오 정지 및 타임라인 싱크 유지
+  this.updateTransport();
+
+  // 2. 배경화면 연출 (엔딩 씬과 통일감을 주는 어두운 연출)
+  background(31, 27, 38);
+  
+  push();
+  noStroke();
+  // 라디오나 공간감 연출을 위한 가이드 원
+  fill(255, 190, 90, 15);
+  ellipse(width / 2, height / 2, 580, 580);
+  
+  // 가이드 패널 배치
+  fill(105, 72, 44);
+  rectMode(CENTER);
+  rect(width / 2, height / 2 + 20, 420, 360, 24);
+  fill(252, 244, 224);
+  rect(width / 2, height / 2 + 10, 380, 240, 16);
+  pop();
+
+  // 3. 상태에 따른 상단 및 내부 텍스트 렌더링
+  push();
+  noStroke();
+  textAlign(CENTER, CENTER);
+  
+  if (!renderingResultUrl) {
+    // 아직 file.io 서버로부터 링크를 받아오지 못한 경우 (업로드 중)
+    fill(255, 239, 205);
+    textStyle(BOLD);
+    textSize(30);
+    text("나만의 음악을 서버에 업로드하고 있습니다", width / 2, height * 0.22);
+    
+    textStyle(NORMAL);
+    textSize(16);
+    fill(255, 239, 205, 190);
+    text("잠시만 기다려주시면 QR 코드가 생성됩니다...", width / 2, height * 0.31);
+    
+    // 패널 내부 로딩 메시지
+    fill(101, 73, 48);
+    textStyle(BOLD);
+    textSize(18);
+    text("연결 링크 생성 중...", width / 2, height / 2 + 10);
+  } else {
+    // file.io 연결 성공 및 URL 획득 완료 상태
+    fill(255, 239, 205);
+    textStyle(BOLD);
+    textSize(30);
+    text("스캔하여 오디오 파일을 다운로드하세요", width / 2, height * 0.22);
+    
+    textStyle(NORMAL);
+    textSize(16);
+    fill(255, 239, 205, 190);
+    text("아래 QR 코드를 스캔하시면 MP3 링크로 연결됩니다.", width / 2, height * 0.31);
+
+    // QR 코드 주입 및 동적 정렬 제어
+    if (!qrCodeElement) {
+      // 1. QR 코드를 주입할 가상 HTML DOM Div 생성
+      qrCodeElement = document.createElement("div");
+      qrCodeElement.id = "qrcode-container";
+      
+      // 1. 기준점을 브라우저 화면 좌측 상단 꼭짓점(0, 0)으로 완전히 고정
+      qrCodeElement.style.position = "absolute";
+
+      // 2. 원하는 QR 코드 '중심'의 픽셀 좌표를 직접 지정 (예: 가로 640px, 세로 360px)
+      const targetX = width/2; 
+      const targetY = height/2 + 10;
+
+      qrCodeElement.style.left = `${targetX}px`;
+      qrCodeElement.style.top = `${targetY}px`;
+
+      // 3. [핵심] 상자 크기(가로세로 190px)의 딱 절반만큼 왼쪽, 위쪽으로 당겨서 
+      // 꼭짓점이 아닌 상자 '정중앙'이 targetX, targetY에 오도록 매직 넘버 고정
+      qrCodeElement.style.marginLeft = "-95px";
+      qrCodeElement.style.marginTop = "-95px";
+
+      // 4. 나머지 스타일 유지
+      qrCodeElement.style.zIndex = "1000";
+      qrCodeElement.style.padding = "10px";
+      qrCodeElement.style.background = "white";
+      qrCodeElement.style.borderRadius = "12px";
+      qrCodeElement.style.boxShadow = "0px 6px 20px rgba(0,0,0,0.4)";
+      
+      document.body.appendChild(qrCodeElement);
+
+      // 3. qrcode.js 인스턴스 빌드 후 주소 연동
+      new QRCode(qrCodeElement, {
+        text: renderingResultUrl,
+        width: 170,
+        height: 170,
+        colorDark: "#4a331e", // 어두운 브라운 톤앤매너
+        colorLight: "#ffffff"
+      });
+    }
+  }
 };

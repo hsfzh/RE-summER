@@ -113,10 +113,15 @@ class GameManager{
             case gameState.END:
                 this.updateEnd(time);
                 break;
+            case gameState.DOWNLOAD:
+                this.updateDownload(time);
+                break;
             case gameState.PLAYING:
                 break;
             }
-            this.updatePlaying(time);
+            if (this.currentState === gameState.PLAYING || this.currentState === gameState.CALLING) {
+              this.updatePlaying(time);
+            }
         }
     }
     updateStart(time){
@@ -251,6 +256,9 @@ class GameManager{
     }
     updateEnd(time){
         if(typeof mixerUI !== "undefined" && mixerUI && typeof mixerUI.updateFinishScreen === "function") mixerUI.updateFinishScreen(time);
+    }
+    updateDownload(time){
+        if(typeof mixerUI !== "undefined" && mixerUI && typeof mixerUI.updateFinishScreen === "function") mixerUI.updateDownloadScreen(time);
     }
     checkInput(){
         if(this.inputTimer > 0) return false;

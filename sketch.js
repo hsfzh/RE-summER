@@ -14,6 +14,7 @@ let gameState = {
   RETURN_CAR: 4, //차타고 귀가하는 씬
   EDITING: 5, //게임 후반부 소리 편집 상태
   END: 6, //게임 엔딩 씬 재생중 상태
+  DOWNLOAD: 7 //소리 qr 다운 상태
 }
 let backgroundImage = [];
 let sceneNum;
@@ -68,6 +69,9 @@ const postEditSoundConfigs = [
 //soundManager
 let soundManager;
 let mixerUI;
+// 완성된 음악 다운 관련 변수
+let renderingResultUrl = ""; // file.io에서 받아온 다운로드 링크 주소 저장
+let qrCodeElement = null;    // 화면에 띄울 HTML QR코드 div 요소를 가리키는 변수
 
 function preload(){
   soundFormats("mp3", "m4a", "wav", "ogg");
@@ -184,28 +188,22 @@ function setup() {
 }
 
 function draw() {
-  if(gameManager && (gameManager.currentState === gameState.EDITING || gameManager.currentState === gameState.END)){
-    gameManager.update(deltaTime/1000);
-    return;
-  }
-  soundManager = new SoundManager();
-  mixerUI = new MixerUI(soundManager);
-  mixerUI.hideBpmInput();
-}
-
-function draw() {
-  if (gameManager.currentState === gameState.EDITING) {
-    mixerUI.update();
+  if (
+    gameManager.currentState === gameState.EDITING ||
+    gameManager.currentState === gameState.END
+  ) {
+    gameManager.update(deltaTime / 1000);
     return;
   }
 
   drawBackground(sceneNum);
-  debugDraw(); // 디버깅용
-  gameManager.update(deltaTime/1000);
+  debugDraw();
+
+  gameManager.update(deltaTime / 1000);
+
   for(let button of buttons){
-    button.update();
-    if(button.show)
-      button.display();
+    button.update(deltaTime / 1000);
+    if(button.show) button.display();
   }
 }
 
