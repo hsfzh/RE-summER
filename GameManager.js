@@ -49,7 +49,7 @@ class GameManager{
             this.isOpening1VideoFinished = false;
             this.isOpening2VideoFinished = false;
             videos.openingVideo1.stop();
-            videos.openingVideo1.play();
+            //videos.openingVideo1.play();
             postEditSoundFiles["main_bgm_source"].stop();
             if (soundManager.bgmOptions[1] && soundManager.bgmOptions[1].soundFile) {
               soundManager.bgmOptions[1].soundFile.stop();

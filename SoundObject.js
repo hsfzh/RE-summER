@@ -67,6 +67,7 @@ class SoundObject extends GameObject {
         
         // 소리 재생
         if (this.audio) {
+        console.log("소리 재생", this.audio);
         this.audio.play();
         }
 

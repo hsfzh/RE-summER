@@ -1,68 +1,77 @@
 const SOUND_LIBRARY = {
-
-    bark: {
-        name: "개 짖는 소리",
+    creek_water: {
+        name: "시냇물",
         icon: null,
         audio: null
     },
-    
-    broom: {
-        name: "빗자루 쓰는 소리",
+    cricket: {
+        name: "귀뚜라미",
         icon: null,
         audio: null
     },
-
-    cricket : {
-        name : "귀뚜라미 우는 소리",
+    fan_hum: {
+        name: "선풍기",
         icon: null,
         audio: null
     },
-
-    fan: {
-        name: "선풍기 돌아가는 소리",
+    old_tv: {
+        name: "브라운관 TV",
         icon: null,
         audio: null
     },
-
-    splash : {
-        name : "시냇물 첨벙거리는 소리",
-        icon : null,
-        audio: null
-    },
-
-    meat: {
-        name: "고기 굽는 소리",
+    wood_chop: {
+        name: "장작 패기",
         icon: null,
         audio: null
     },
-
-    riverKid: {
-        name: "물 속에서 물고기 잡는 소리",
+    phone_ring: {
+        name: "전화벨",
         icon: null,
         audio: null
     },
-
-    splash: {
-        name: "물 첨벙거리는 소리",
+    knife_chop: {
+        name: "도마 칼질",
         icon: null,
         audio: null
     },
-
-    stew: {
-        name: "찌개 끓는 소리",
+    fish_catch_underwater: {
+        name: "물고기 잡기",
         icon: null,
         audio: null
     },
-
-    tv: {
-        name: "TV 소리",
+    stew_boil: {
+        name: "찌개 끓기",
         icon: null,
         audio: null
     },
-
-    wood: {
-        name: "장작 패는 소리",
+    dog_bark: {
+        name: "강아지",
         icon: null,
         audio: null
     },
+    lamp_switch: {
+        name: "스탠드 스위치",
+        icon: null,
+        audio: null
+    },
+    helicopter_pass: {
+        name: "헬리콥터",
+        icon: null,
+        audio: null
+    },
+    sweeping_yard: {
+        name: "마당 쓸기",
+        icon: null,
+        audio: null
+    },
+    water_splash: {
+        name: "물 첨벙",
+        icon: null,
+        audio: null
+    },
+    grilling_meat: {
+        name: "고기 굽기",
+        icon: null,
+        audio: null
+    }
 };

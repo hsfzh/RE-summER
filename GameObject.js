@@ -55,6 +55,7 @@ class GameObject{
   display(){
     if(!this.isActive) return;
     // 충돌 판정 범위 시각화 코드 (디버깅용)
+    /*
     if (this.collidable && isDebugMode) {
         for (let colliderCircle of this.collider.circles) {
             push();
@@ -68,18 +69,24 @@ class GameObject{
             pop();
         }
     }
+    */
     if (this.img == null) return;
     push();
     noSmooth();
     translate(this.x, this.y);
 
+    /*
+    if(this.hasBorder) {
     // 아이콘 원형 테두리
     stroke(255);        // 테두리 색
     strokeWeight(4);    // 테두리 두께
     noFill();
-
     let diameter = max(this.width, this.height) + 8;
     circle(0, 0, diameter);
+    }
+    */
+
+
 
     // 아이콘 이미지
     noStroke();
