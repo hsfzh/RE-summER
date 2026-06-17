@@ -196,6 +196,12 @@ class CallButton extends Button{
             this.noButton.changeShowState(false);
         }
     }
+    reset(){
+        this.pressed = false;
+        this.enter = false;
+        this.yesButton.changeShowState(false);
+        this.noButton.changeShowState(false);
+    }
 }
 class CallYesButton extends Button{
     constructor(_x, _y, _sizeX, _sizeY, _img, _parent){

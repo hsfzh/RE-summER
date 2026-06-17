@@ -6,7 +6,7 @@ function initSceneObjects(){
     );
 
     sceneObjects[scenes.STREAM].push(
-        new SoundObject(800,300,"water_splash", player)
+        new SoundObject(560,440,"water_splash", player)
     );
 
     sceneObjects[scenes.STREAM].push(

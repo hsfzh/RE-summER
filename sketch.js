@@ -62,7 +62,7 @@ const postEditSoundConfigs = [
   { id: "stew_boil", name: "찌개 끓기", sceneName: "부엌", file: "Resources/Sounds/final/stew_boil.m4a", color: [210, 96, 74], volume: 0.94, lowPassFreq: 6200, reverbWet: 0.10 },
   { id: "dog_bark", name: "강아지", sceneName: "마당", file: "Resources/Sounds/final/dog_bark.m4a", color: [190, 134, 76], volume: 0.98, lowPassFreq: 9500 },
   { id: "lamp_switch", name: "스탠드 스위치", sceneName: "안방", file: "Resources/Sounds/final/lamp_switch.m4a", color: [245, 203, 92], volume: 0.96, lowPassFreq: 9800 },
-  { id: "helicopter_pass", name: "헬리콥터", sceneName: "마당", file: "Resources/Sounds/final/helicopter_pass.m4a", color: [122, 132, 150], volume: 0.9, lowPassFreq: 5600, delayWet: 0.05 },
+  { id: "helicopter_pass", name: "비행기", sceneName: "마당", file: "Resources/Sounds/final/helicopter_pass.m4a", color: [122, 132, 150], volume: 0.9, lowPassFreq: 5600, delayWet: 0.05 },
   { id: "sweeping_yard", name: "마당 쓸기", sceneName: "마당", file: "Resources/Sounds/final/sweeping_yard.m4a", color: [143, 115, 77], volume: 0.92, lowPassFreq: 6500 },
   { id: "water_splash", name: "물 첨벙", sceneName: "시냇가", file: "Resources/Sounds/final/water_splash.m4a", color: [88, 175, 215], volume: 0.98, lowPassFreq: 9000, reverbWet: 0.08 },
   { id: "grilling_meat", name: "고기 굽기", sceneName: "부엌", file: "Resources/Sounds/final/grilling_meat.m4a", color: [193, 92, 55], volume: 0.94, lowPassFreq: 7200 }
@@ -190,10 +190,6 @@ function setup() {
   sceneNum = 0;
   for(let i=0; i<totalSceneNum; i++) sceneObjects.push([]);
   // 씬 오브젝트 배치
-  // 시냇가 씬
-  // 안방씬
-  // 부엌 씬
-  // 마당 씬
   initSceneObjects(); //SceneObjectLoader.js
 
   // 영상 로딩
@@ -246,13 +242,13 @@ function keyPressed(){
     mixerUI.keyPressed();
     return false;
   }
-  if(keyCode == 84){
-    isDebugMode = !isDebugMode;
-    for(let button of debugButtons){
-      button.changeShowState(isDebugMode);
-    }
-    callButton.changeShowState(isDebugMode);
-  }
+  //if(keyCode == 84){
+  //  isDebugMode = !isDebugMode;
+  //  for(let button of debugButtons){
+  //    button.changeShowState(isDebugMode);
+  //  }
+  //  callButton.changeShowState(isDebugMode);
+  //}
 }
 
 function mousePressed(){

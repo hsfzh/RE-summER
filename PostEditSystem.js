@@ -1167,6 +1167,31 @@ MixerUI.prototype.prepareFreshEditingSession = function() {
     this.soundManager.stopAll();
     this.clearStoredMixState();
 
+    if (typeof player !== "undefined" && player.inventory) {
+        // 1. BGM 트랙은 유지하고, 기존 효과음 트랙은 비웁니다.
+        const bgmTrack = this.soundManager.bgmTrack;
+        this.soundManager.tracks = bgmTrack ? [bgmTrack] : [];
+
+        // 2. 플레이어 인벤토리에 들어있는 soundId 목록을 가져옵니다.
+        const collectedIds = player.inventory.getAllIds(); // ['cricket', 'fan_hum', ...]
+
+        // 3. 수집된 오디오 소스만 SoundManager에 다시 등록합니다.
+        for (const soundId of collectedIds) {
+            const libraryData = SOUND_LIBRARY[soundId];
+            if (libraryData && libraryData.audio) {
+                // 기존에 메인에서 등록하던 포맷과 동일하게 config를 생성하여 수집
+                this.soundManager.collect({
+                    id: soundId,
+                    name: libraryData.name,
+                    sceneName: "수집된 소리",
+                    soundFile: libraryData.audio,
+                    volume: 0.65,
+                    rate: 1.0
+                });
+            }
+        }
+    }
+
     for(const track of this.soundManager.tracks){
       track.stop();
       track.masterVolume = track.defaultMasterVolume ?? 1.0;
@@ -1219,6 +1244,16 @@ MixerUI.prototype.prepareFreshEditingSession = function() {
 MixerUI.prototype.resetMix = function() {
     this.stopTransport(true);
     this.soundManager.stopAll();
+
+    if (typeof player !== "undefined" && player.inventory) {
+        const bgmTrack = this.soundManager.bgmTrack;
+        const collectedIds = player.inventory.getAllIds();
+        
+        // BGM과 현재 수집된 아이템에 해당하는 트랙만 필터링하여 남깁니다.
+        this.soundManager.tracks = this.soundManager.tracks.filter(track => {
+            return track.isBgm || collectedIds.includes(track.id);
+        });
+    }
 
     for(const track of this.soundManager.tracks){
       track.masterVolume = track.defaultMasterVolume ?? 1.0;
@@ -3669,6 +3704,7 @@ MixerUI.prototype.resetWholeGameToInitialState = function() {
       OUTSIDE: false,
       STREAM: false
     };
+    callButton.reset();
     if(player.inventory){
       if(typeof player.inventory.clear === "function") player.inventory.clear();
       player.inventory.selectedIndex = 0;
