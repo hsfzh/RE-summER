@@ -1,6 +1,6 @@
 class Player extends GameObject{
     constructor(_x, _y, _imgs, _scale = 1, _collisionObject = true, _priority = 0){
-        super(_x, _y, _imgs[0], _scale, _collisionObject, _priority);
+        super(_x, _y, _imgs[0], _scale*0.8, _collisionObject, _priority);
         this.imgs = _imgs;
         this.speed = 3;
         this.vx = 0;
@@ -45,6 +45,10 @@ class Player extends GameObject{
         //인벤토리 확인용
         this.inventory = new Inventory();
         this.showInventory = false;
+    }
+    moveTo(x, y){
+        super.moveTo(x, y);
+        this.isMoving = false;
     }
     update(time){
         this.handleInput();

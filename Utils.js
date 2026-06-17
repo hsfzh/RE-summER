@@ -1,7 +1,7 @@
 function showImage(img, scale, x, y){
   imageMode(CENTER);
   if(img==null||img===undefined){
-    console.log("이미지 없음");
+    //console.trace("이미지 없음:", img);
     return;
   }
   if(scale == 0)
@@ -9,7 +9,6 @@ function showImage(img, scale, x, y){
     let xScale = width/img.width;
     let yScale = height/img.height;
     scale = min(xScale, yScale);
-    console.log(`화면 해상도: ${img.width*scale} x ${img.height*scale}`);
   }
   image(img, x, y, img.width*scale, img.height*scale);
 }
@@ -43,13 +42,15 @@ function debugDraw(){
 }
 let debugButtons = [];
 function initDebugButtons(){
-  let goToStartButton = new ToStartButton(width*0.3, height*0.1, 100, 50);
-  let goToIntroButton = new ToIntroButton(width*0.4, height*0.1, 100, 50);
-  let goHomeButton = new ToReturnButton(width*0.5, height*0.1, 100, 50);
-  let goToEditButton = new ToEditButton(width*0.6, height*0.1, 100, 50);
-  let goToEndingButton = new ToEndingButton(width*0.7, height*0.1, 100, 50);
+  let goToStartButton = new ToStartButton(width*0.25, height*0.1, 100, 50);
+  let goToIntroButton = new ToIntroButton(width*0.35, height*0.1, 100, 50);
+  let goToMapSelectButton = new ToMapSelectButton(width*0.45, height*0.1, 100, 50);
+  let goHomeButton = new ToReturnButton(width*0.55, height*0.1, 100, 50);
+  let goToEditButton = new ToEditButton(width*0.65, height*0.1, 100, 50);
+  let goToEndingButton = new ToEndingButton(width*0.75, height*0.1, 100, 50);
   debugButtons.push(goToStartButton);
   debugButtons.push(goToIntroButton);
+  debugButtons.push(goToMapSelectButton);
   debugButtons.push(goHomeButton);
   debugButtons.push(goToEditButton);
   debugButtons.push(goToEndingButton);

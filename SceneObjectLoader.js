@@ -2,24 +2,34 @@ function initSceneObjects(){
 
     // 시냇가
     sceneObjects[scenes.STREAM].push(
-        new SoundObject(400,600,"water")
+        new SoundObject(400,600,"splash", player)
+    );
+
+    sceneObjects[scenes.STREAM].push(
+        new SoundObject(800,400,"riverKid", player, 1.5)
     );
 
     // 벽 및 장애물
     sceneObjects[scenes.STREAM].push(
-        new CollisionObject(283,87,570,177)
+        new CollisionObject(220,87,480,177)
     );
     sceneObjects[scenes.STREAM].push(
-        new CollisionObject(80,213,200,200)
+        new CollisionObject(60,250,150,200)
     );
     sceneObjects[scenes.STREAM].push(
-        new CollisionObject(936,275,326,10)
+        new CollisionObject(200,220,180,100)
     );
+    sceneObjects[scenes.STREAM].push(
+        new CollisionObject(320,200,100,100)
+    );
+    //sceneObjects[scenes.STREAM].push(
+    //    new CollisionObject(936,275,326,10)
+    //);
     sceneObjects[scenes.STREAM].push(
         new CollisionObject(620,423,88,43)
     );
     sceneObjects[scenes.STREAM].push(
-        new CollisionObject(538,470,97,37)
+        new CollisionObject(538,490,97,37)
     );
     sceneObjects[scenes.STREAM].push(
         new CollisionObject(846,434,40,40)
@@ -38,12 +48,20 @@ function initSceneObjects(){
     );
 
     // 안방
+    sceneObjects[scenes.BEDROOM].push(
+        new SoundObject(1000,350,"tv",player)
+    );
+
+    sceneObjects[scenes.BEDROOM].push(
+        new SoundObject(250,250,"fan",player)
+    );
+
     // 벽 및 장애물
     sceneObjects[scenes.BEDROOM].push(
         new CollisionObject(width/2,75,946,150)
     );
     sceneObjects[scenes.BEDROOM].push(
-        new CollisionObject(1060,360,276,200)
+        new CollisionObject(1120,230,250,500)
     );
     sceneObjects[scenes.BEDROOM].push(
         new CollisionObject(910,500,340,90)
@@ -58,15 +76,22 @@ function initSceneObjects(){
         new CollisionObject(148,718,74,height/2)
     );
     sceneObjects[scenes.BEDROOM].push(
-        new CollisionObject(246,207,130,100)
+        new CollisionObject(200,207,200,100)
     );
     sceneObjects[scenes.BEDROOM].push(
-        new CollisionObject(44,425,95,352)
+        new CollisionObject(44,height/2,95,height)
+    );
+    sceneObjects[scenes.BEDROOM].push(
+        new CollisionObject(100,height/4 + 50 ,95,height/2)
     );
 
     //부엌
     sceneObjects[scenes.KITCHEN].push(
-        new SoundObject(400,600,"clock")
+        new SoundObject(400,600,"stew",player)
+    );
+
+    sceneObjects[scenes.KITCHEN].push(
+        new SoundObject(350,400,"meat",player)
     );
 
     // 벽 및 장애물
@@ -93,6 +118,13 @@ function initSceneObjects(){
     );
 
     // 마당
+     sceneObjects[scenes.OUTSIDE].push(
+        new SoundObject(300,400,"bark",player)
+    );
+
+    sceneObjects[scenes.OUTSIDE].push(
+        new SoundObject(850,400,"broom",player)
+    );
     // 벽 및 장애물
     sceneObjects[scenes.OUTSIDE].push(
         new CollisionObject(width/2,65,width,130)
@@ -116,9 +148,33 @@ function initSceneObjects(){
         new CollisionObject(60,height/2,120,height)
     );
     sceneObjects[scenes.OUTSIDE].push(
-        new CollisionObject(362,629,483,171)
+        new CollisionObject(435,640,340,140)
+    );
+    sceneObjects[scenes.OUTSIDE].push(
+        new CollisionObject(190,620,160,140)
     );
     sceneObjects[scenes.OUTSIDE].push(
         new CollisionObject(946,655,672,119)
     );
+
+    // 전화 씬
+    sceneObjects[scenes.CALLING].push(
+        new GameObject(width/2, height/2, images.call_phone, 1, false, 1)
+    )
+    sceneObjects[scenes.CALLING].push(
+        new GameObject(width*19/55, height*5/11, images.call_player, 1, false, 1)
+    )
+    sceneObjects[scenes.CALLING].push(
+        new GameObject(width*13/20, height*2/5, images.call_mom, 1, false, 1)
+    )
+
+    // 모든 오브젝트 추가 후 마지막에
+    ResetAllObjects();
+}
+
+function ResetAllObjects(){
+    for(let objects of sceneObjects){
+        for(let object of objects) 
+            object.deactivate();
+    }
 }

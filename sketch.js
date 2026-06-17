@@ -6,6 +6,7 @@ let frontObjects = [];
 let objects = [];
 let buttons = [];
 let gameState = {
+  START: -1, //게임 시작 전 인트로
   INTRO: 0, //게임 인트로 차타고 가는 시작 씬 재생중 상태
   MAP_SELECT: 1, //맵 선택 상태
   PLAYING: 2, //게임 진행중 상태
@@ -13,7 +14,7 @@ let gameState = {
   RETURN_CAR: 4, //차타고 귀가하는 씬
   EDITING: 5, //게임 후반부 소리 편집 상태
   END: 6, //게임 엔딩 씬 재생중 상태
-  NONE: 7 //게임 시작전 상태
+  DOWNLOAD: 7 //소리 qr 다운 상태
 }
 let backgroundImage = [];
 let sceneNum;
@@ -31,8 +32,11 @@ let scenes = { // 빈씬:0, 시냇가:1, 안방:2, 부엌:3, 마당:4, 인트로
   ENDING: 10
 };
 let totalSceneNum = 11; 
+let fadeTime = 3;
 // 객체들
 let startButton;
+let tutorialButton;
+let restartButton;
 let mapButton;
 let gameManager;
 let player;
@@ -41,10 +45,9 @@ let sceneObjects = []; //각 씬에서만 사용하는 오브젝트는 따로 �
 let mapButtons = [];
 // 이미지
 let images = {}; // 딕셔너리 형태 preload에서 images.player = loadImage 이렇게 새로운 변수 생성 없이 초기화
-let returnVideo;
+// 
+let videos = {};
 
-let soundManager;
-let mixerUI;
 let postEditSoundFiles = {};
 const postEditBgmConfig = { id: "main_bgm_source", name: "MAIN BGM", sceneName: "MAIN", file: "Resources/Sounds/final/main_bgm.mp3", color: [86, 132, 210], volume: 0.26, masterVolume: 0.78, lowPassFreq: 9200, reverbWet: 0.06 };
 const postEditSoundConfigs = [
@@ -64,46 +67,89 @@ const postEditSoundConfigs = [
   { id: "water_splash", name: "물 첨벙", sceneName: "시냇가", file: "Resources/Sounds/final/water_splash.m4a", color: [88, 175, 215], volume: 0.98, lowPassFreq: 9000, reverbWet: 0.08 },
   { id: "grilling_meat", name: "고기 굽기", sceneName: "부엌", file: "Resources/Sounds/final/grilling_meat.m4a", color: [193, 92, 55], volume: 0.94, lowPassFreq: 7200 }
 ];
+//soundManager
+let soundManager;
+let mixerUI;
+// 완성된 음악 다운 관련 변수
+let renderingResultUrl = ""; // file.io에서 받아온 다운로드 링크 주소 저장
+let qrCodeElement = null;    // 화면에 띄울 HTML QR코드 div 요소를 가리키는 변수
+let call_sound;
 
 function preload(){
   soundFormats("mp3", "m4a", "wav", "ogg");
+  // 시작화면
+  images.start = loadImage("Resources/Images/opening.png");
+  images.tutorial = loadImage("Resources/Images/tutorial.png");
+  // 플레이어
   images.player = [ //up, down, left, right
-    loadImage("Resources/Images/player_back.png"),
-    loadImage("Resources/Images/player_back2.png"),
-    loadImage("Resources/Images/player_front.png"),
-    loadImage("Resources/Images/player_front2.png"),
-    loadImage("Resources/Images/player_left.png"),
-    loadImage("Resources/Images/player_left2.png"),
-    loadImage("Resources/Images/player_right.png"),
-    loadImage("Resources/Images/player_right2.png"),
+    loadImage("Resources/Images/player/player_back.png"),
+    loadImage("Resources/Images/player/player_back2.png"),
+    loadImage("Resources/Images/player/player_front.png"),
+    loadImage("Resources/Images/player/player_front2.png"),
+    loadImage("Resources/Images/player/player_left.png"),
+    loadImage("Resources/Images/player/player_left2.png"),
+    loadImage("Resources/Images/player/player_right.png"),
+    loadImage("Resources/Images/player/player_right2.png"),
   ];
   images.introBackground = loadImage("Resources/Images/intro.png");
-  images.map = loadImage("Resources/Images/map.png");
-  images.stream = loadImage("Resources/Images/stream.png");
-  images.bedroom = loadImage("Resources/Images/bedroom.png");
-  images.kitchen = loadImage("Resources/Images/kitchen.png");
-  images.outside = loadImage("Resources/Images/outside.png");
-  images.calling = loadImage("Resources/Images/calling.png");
+  // 맵
+  images.map = loadImage("Resources/Images/map/map.png");
+  images.stream = loadImage("Resources/Images/map/stream.png");
+  images.bedroom = loadImage("Resources/Images/map/bedroom.png");
+  images.kitchen = loadImage("Resources/Images/map/kitchen.png");
+  images.outside = loadImage("Resources/Images/map/outside.png");
+  // 전화하기 씬
+  images.call_map = loadImage("Resources/Images/calling/map.png");
+  images.call_button = loadImage("Resources/Images/calling/call_mom.png");
+  images.call_mom = loadImage("Resources/Images/calling/mom.png");
+  images.call_player = loadImage("Resources/Images/calling/player.png");
+  images.call_phone = loadImage("Resources/Images/calling/phone.png");
+  // 내 방
   images.my_room = loadImage("Resources/Images/my_room.png");
   images.my_room_radio = loadImage("Resources/Images/my_room_radio.png");
-  images.return = [];
-  images.return[0] = loadImage("Resources/Images/return0.png");
-  images.return[1] = loadImage("Resources/Images/return1.png");
-  images.return[2] = loadImage("Resources/Images/return2.png");
-  images.return[3] = loadImage("Resources/Images/return3.png");
-  images.return[4] = loadImage("Resources/Images/return4.png");
-  images.return[5] = loadImage("Resources/Images/return5.png");
-  images.call_mom = loadImage("Resources/Images/icons/call_mom.png");
 
-  SOUND_LIBRARY.water.icon = loadImage("Resources/Images/icons_outside.png");
-  SOUND_LIBRARY.water.audio = loadSound("Resources/Sounds/knock.mp3");
-  SOUND_LIBRARY.clock.icon = loadImage("Resources/Images/icons_kitchen.png");
-  SOUND_LIBRARY.clock.audio = loadSound("Resources/Sounds/ticktock.mp3");
+  call_sound = loadSound("Resources/Sounds/call_sound.m4a");
+  call_sound.setVolume(2);
+
+  //SOUND_LIBRARY.water.icon = loadImage("Resources/Images/icons_outside.png");
+  //SOUND_LIBRARY.water.audio = loadSound("Resources/Sounds/knock.mp3");
+  //SOUND_LIBRARY.clock.icon = loadImage("Resources/Images/icons_kitchen.png");
+  //SOUND_LIBRARY.clock.audio = loadSound("Resources/Sounds/ticktock.mp3");
   postEditSoundFiles[postEditBgmConfig.id] = loadSound(postEditBgmConfig.file);
   for(const config of postEditSoundConfigs){
     postEditSoundFiles[config.id] = loadSound(config.file);
   }
+  images.qr_page = loadImage("Resources/Images/qr_page.png");
 
+  SOUND_LIBRARY.bark.icon = loadImage("Resources/Images/icons/dog.png");
+  SOUND_LIBRARY.bark.audio = loadSound("Resources/Sounds/bark.m4a");
+ 
+  SOUND_LIBRARY.broom.icon = loadImage("Resources/Images/icons/broom.png");
+  SOUND_LIBRARY.broom.audio = loadSound("Resources/Sounds/broom.m4a");
+  
+  SOUND_LIBRARY.cricket.icon = loadImage("Resources/Images/icons/cricket.png");
+  SOUND_LIBRARY.cricket.audio = loadSound("Resources/Sounds/cricket.m4a");
+
+  SOUND_LIBRARY.fan.icon = loadImage("Resources/Images/icons/fan.png");
+  SOUND_LIBRARY.fan.audio = loadSound("Resources/Sounds/fan.m4a");
+  
+  SOUND_LIBRARY.meat.icon = loadImage("Resources/Images/icons/meat.png");
+  SOUND_LIBRARY.meat.audio = loadSound("Resources/Sounds/meat.m4a");
+
+  SOUND_LIBRARY.riverKid.icon = loadImage("Resources/Images/icons/river_kid.png");
+  SOUND_LIBRARY.riverKid.audio = loadSound("Resources/Sounds/river_kid.m4a");
+
+  SOUND_LIBRARY.splash.icon = loadImage("Resources/Images/icons/river.png");
+  SOUND_LIBRARY.splash.audio = loadSound("Resources/Sounds/splash.m4a");
+
+  SOUND_LIBRARY.stew.icon = loadImage("Resources/Images/icons/stew.png");
+  SOUND_LIBRARY.stew.audio = loadSound("Resources/Sounds/stew.m4a");
+ 
+  SOUND_LIBRARY.tv.icon = loadImage("Resources/Images/icons/tv.png");
+  SOUND_LIBRARY.tv.audio = loadSound("Resources/Sounds/tv.m4a");
+
+  SOUND_LIBRARY.wood.icon = loadImage("Resources/Images/icons/wood.png");
+  SOUND_LIBRARY.wood.audio = loadSound("Resources/Sounds/wood.m4a");
 }
 
 function setup() {
@@ -113,40 +159,59 @@ function setup() {
   }, { passive: false });
   initDebugButtons();
   gameManager = new GameManager();
-  startButton = new StartButton(width/2, height * 0.75, 200, 100);
+  startButton = new StartButton(width*0.62, height * 0.66, 270, 120);
+  tutorialButton = new TutorialButton(width*0.38, height * 0.66, 270, 120);
+  restartButton = new RestartButton(width/2, height * 0.915, 150, 50);
+  restartButton.changeShowState(false);
   mapButton = new MapButton(0.16*width, 0.06*height, 100, 50);
   mapButton.changeShowState(false);
-  callButton = new CallButton(0.88*width, 0.06*height, 100, 50, images.call_mom);
+  callButton = new CallButton(0.88*width, 0.06*height, 100, 50, images.call_button);
   callButton.changeShowState(false);
   player = new Player(width/2, height/2, images.player, 0.2, true, 1);
   initMapButtons();
   initBackgroundImage();
   sceneNum = 0;
   for(let i=0; i<totalSceneNum; i++) sceneObjects.push([]);
-  console.log(sceneObjects);
   // 씬 오브젝트 배치
   // 시냇가 씬
   // 안방씬
   // 부엌 씬
   // 마당 씬
   initSceneObjects(); //SceneObjectLoader.js
-  returnVideo = createVideo("Resources/Videos/return.mp4");
-  returnVideo.hide();
+
+  // 영상 로딩
+  videos.openingVideo1 = createVideo("Resources/Videos/opening1.mp4");
+  videos.openingVideo2 = createVideo("Resources/Videos/opening2.mp4");
+  videos.introVideo = createVideo("Resources/Videos/introVideo.mp4");
+  videos.callVideo = createVideo("Resources/Videos/afterCall.mp4");
+  videos.returnVideo = createVideo("Resources/Videos/return.mp4");
+  videos.returnVideo2 = createVideo("Resources/Videos/return2.mp4");
+  for (const video of Object.values(videos))
+    video.hide();
+
   initPostEditSystem();
+
+  // 얘는 setup 가장 마지막에
+  gameManager.changeState(gameState.START);
 }
 
 function draw() {
-  if(gameManager && (gameManager.currentState === gameState.EDITING || gameManager.currentState === gameState.END)){
-    gameManager.update(deltaTime/1000);
+  if (
+    gameManager.currentState === gameState.EDITING ||
+    gameManager.currentState === gameState.END
+  ) {
+    gameManager.update(deltaTime / 1000);
     return;
   }
+
   drawBackground(sceneNum);
-  debugDraw(); // 디버깅용
-  gameManager.update(deltaTime/1000);
+  debugDraw();
+
+  gameManager.update(deltaTime / 1000);
+
   for(let button of buttons){
-    button.update();
-    if(button.show)
-      button.display();
+    button.update(deltaTime / 1000);
+    if(button.show) button.display();
   }
 }
 
@@ -159,11 +224,16 @@ function keyPressed(){
     userStartAudio();
     return false;
   }
+  if (gameManager.currentState === gameState.EDITING) {
+    mixerUI.keyPressed();
+    return false;
+  }
   if(keyCode == 84){
     isDebugMode = !isDebugMode;
     for(let button of debugButtons){
       button.changeShowState(isDebugMode);
     }
+    callButton.changeShowState(isDebugMode);
   }
 }
 
@@ -176,6 +246,12 @@ function mousePressed(){
     userStartAudio();
     return mixerUI.mousePressedFinishScreen();
   }
+
+  if (gameManager.currentState === gameState.EDITING) {
+    mixerUI.mousePressed();
+    return false;
+  }
+  
   for(let button of buttons){
     if(button.ishovering && button.show){
       button.performAction();
@@ -196,6 +272,7 @@ function changeScene(newSceneNum){
     callButton.changeShowState(player.hasVisitedAllMaps());
   }
 }
+
 function drawBackground(){
   // 배경 정리
   background(200);
@@ -221,8 +298,8 @@ function initBackgroundImage(){
   backgroundImage[scenes.BEDROOM] = images.bedroom;
   backgroundImage[scenes.KITCHEN] = images.kitchen;
   backgroundImage[scenes.OUTSIDE] = images.outside;
-  backgroundImage[scenes.RETURN_CAR] = images.return[0];
-  backgroundImage[scenes.CALLING] = images.calling;
+  backgroundImage[scenes.RETURN_CAR] = null;
+  backgroundImage[scenes.CALLING] = images.call_map;
 }
 
 function doubleClicked(){
@@ -264,4 +341,25 @@ function initPostEditSystem(){
   document.addEventListener("contextmenu", event => {
     if(gameManager && (gameManager.currentState === gameState.EDITING || gameManager.currentState === gameState.END)) event.preventDefault();
   });
+}
+
+function enterPostEditMode() {
+  soundManager.tracks = [];
+
+  for (let item of player.inventory.items) {
+    const soundId = item.soundId;
+    const data = SOUND_LIBRARY[soundId];
+
+    if (!data || !data.audio) continue;
+
+    soundManager.collect({
+      id: soundId,
+      name: data.name || soundId,
+      soundFile: data.audio,
+      sceneName: "",
+      color: [190, 130, 80]
+    });
+  }
+
+  gameManager.changeState(gameState.EDITING);
 }
