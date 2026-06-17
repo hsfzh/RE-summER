@@ -2,11 +2,15 @@ function initSceneObjects(){
 
     // 시냇가
     sceneObjects[scenes.STREAM].push(
-        new SoundObject(400,600,"splash", player)
+        new SoundObject(400,600,"creek_water", player)
     );
 
     sceneObjects[scenes.STREAM].push(
-        new SoundObject(800,400,"riverKid", player, 1.5)
+        new SoundObject(800,300,"water_splash", player)
+    );
+
+    sceneObjects[scenes.STREAM].push(
+        new SoundObject(850,450,"fish_catch_underwater", player)
     );
 
     // 벽 및 장애물
@@ -48,21 +52,29 @@ function initSceneObjects(){
     );
 
     // 안방
-    sceneObjects[scenes.BEDROOM].push(
-        new SoundObject(1000,350,"tv",player)
+     sceneObjects[scenes.BEDROOM].push(
+        new SoundObject(350,250,"lamp_switch", player)
     );
 
     sceneObjects[scenes.BEDROOM].push(
-        new SoundObject(250,250,"fan",player)
+        new SoundObject(250,300,"fan_hum", player)
+    );
+
+    sceneObjects[scenes.BEDROOM].push(
+        new SoundObject(1100,350,"old_tv", player)
+    );
+
+    sceneObjects[scenes.BEDROOM].push(
+        new SoundObject(950,300,"phone_ring", player)
     );
 
     // 벽 및 장애물
     sceneObjects[scenes.BEDROOM].push(
         new CollisionObject(width/2,75,946,150)
     );
-    sceneObjects[scenes.BEDROOM].push(
-        new CollisionObject(1120,230,250,500)
-    );
+    //sceneObjects[scenes.BEDROOM].push(
+    //    new CollisionObject(1120,230,250,500)
+    //);
     sceneObjects[scenes.BEDROOM].push(
         new CollisionObject(910,500,340,90)
     );
@@ -87,12 +99,18 @@ function initSceneObjects(){
 
     //부엌
     sceneObjects[scenes.KITCHEN].push(
-        new SoundObject(400,600,"stew",player)
+        new SoundObject(725,500,"knife_chop", player)
+    );
+    sceneObjects[scenes.KITCHEN].push(
+        new SoundObject(900,500,"wood_chop", player)
+    );
+    sceneObjects[scenes.KITCHEN].push(
+        new SoundObject(200,500,"stew_boil", player)
+    );
+    sceneObjects[scenes.KITCHEN].push(
+        new SoundObject(350,500,"grilling_meat", player)
     );
 
-    sceneObjects[scenes.KITCHEN].push(
-        new SoundObject(350,400,"meat",player)
-    );
 
     // 벽 및 장애물
     sceneObjects[scenes.KITCHEN].push(
@@ -118,13 +136,22 @@ function initSceneObjects(){
     );
 
     // 마당
-     sceneObjects[scenes.OUTSIDE].push(
-        new SoundObject(300,400,"bark",player)
+    sceneObjects[scenes.OUTSIDE].push(
+        new SoundObject(300,400,"dog_bark", player)
     );
 
     sceneObjects[scenes.OUTSIDE].push(
-        new SoundObject(850,400,"broom",player)
+        new SoundObject(1000,500,"cricket", player)
     );
+
+    sceneObjects[scenes.OUTSIDE].push(
+        new SoundObject(400,600,"helicopter_pass", player)
+    );
+
+    sceneObjects[scenes.OUTSIDE].push(
+        new SoundObject(900,400,"sweeping_yard", player)
+    );
+
     // 벽 및 장애물
     sceneObjects[scenes.OUTSIDE].push(
         new CollisionObject(width/2,65,width,130)

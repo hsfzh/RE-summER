@@ -45,6 +45,10 @@ class Player extends GameObject{
         //인벤토리 확인용
         this.inventory = new Inventory();
         this.showInventory = false;
+        this.hasBorder = false;
+
+        this.pickupMessage = "";
+        this.pickupMessageTimer = 0;
     }
     moveTo(x, y){
         super.moveTo(x, y);
@@ -164,7 +168,7 @@ class Player extends GameObject{
     findSound(){
         // TODO: 상호작용 가능한 가장 가까운 소리 찾고 반환
             let nearest = null;
-            let nearestDistance = 500;
+            let nearestDistance = 100;
 
             for(let object of sceneObjects[sceneNum]){
 
@@ -191,6 +195,11 @@ class Player extends GameObject{
         // TODO: 주변 사운드 확인 후 인벤토리에 넣기.
         console.log("sound =", sound);
         console.log("sound 타입 =", sound.constructor.name);
+        console.log("sound 재생", sound);
+        sound.audio.setVolume(30.0);
+        sound.audio.play();
+        sound.audio.stop(2);
+
         
         if(this.inventory.has(sound.soundId)) {
             console.log("이미 보유중인 아이템입니다.");

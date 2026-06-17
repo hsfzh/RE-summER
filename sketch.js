@@ -121,35 +121,52 @@ function preload(){
   }
   images.qr_page = loadImage("Resources/Images/qr_page.png");
 
-  SOUND_LIBRARY.bark.icon = loadImage("Resources/Images/icons/dog.png");
-  SOUND_LIBRARY.bark.audio = loadSound("Resources/Sounds/bark.m4a");
- 
-  SOUND_LIBRARY.broom.icon = loadImage("Resources/Images/icons/broom.png");
-  SOUND_LIBRARY.broom.audio = loadSound("Resources/Sounds/broom.m4a");
-  
-  SOUND_LIBRARY.cricket.icon = loadImage("Resources/Images/icons/cricket.png");
-  SOUND_LIBRARY.cricket.audio = loadSound("Resources/Sounds/cricket.m4a");
+SOUND_LIBRARY.creek_water.icon = loadImage("Resources/Images/icons/creek_water.png");
+SOUND_LIBRARY.creek_water.audio = loadSound("Resources/Sounds/final/creek_water.m4a");
 
-  SOUND_LIBRARY.fan.icon = loadImage("Resources/Images/icons/fan.png");
-  SOUND_LIBRARY.fan.audio = loadSound("Resources/Sounds/fan.m4a");
-  
-  SOUND_LIBRARY.meat.icon = loadImage("Resources/Images/icons/meat.png");
-  SOUND_LIBRARY.meat.audio = loadSound("Resources/Sounds/meat.m4a");
+SOUND_LIBRARY.cricket.icon = loadImage("Resources/Images/icons/cricket.png");
+SOUND_LIBRARY.cricket.audio = loadSound("Resources/Sounds/final/cricket.m4a");
 
-  SOUND_LIBRARY.riverKid.icon = loadImage("Resources/Images/icons/river_kid.png");
-  SOUND_LIBRARY.riverKid.audio = loadSound("Resources/Sounds/river_kid.m4a");
+SOUND_LIBRARY.fan_hum.icon = loadImage("Resources/Images/icons/fan_hum.png");
+SOUND_LIBRARY.fan_hum.audio = loadSound("Resources/Sounds/final/fan_hum.m4a");
 
-  SOUND_LIBRARY.splash.icon = loadImage("Resources/Images/icons/river.png");
-  SOUND_LIBRARY.splash.audio = loadSound("Resources/Sounds/splash.m4a");
+SOUND_LIBRARY.old_tv.icon = loadImage("Resources/Images/icons/old_tv.png");
+SOUND_LIBRARY.old_tv.audio = loadSound("Resources/Sounds/final/old_tv.m4a");
 
-  SOUND_LIBRARY.stew.icon = loadImage("Resources/Images/icons/stew.png");
-  SOUND_LIBRARY.stew.audio = loadSound("Resources/Sounds/stew.m4a");
- 
-  SOUND_LIBRARY.tv.icon = loadImage("Resources/Images/icons/tv.png");
-  SOUND_LIBRARY.tv.audio = loadSound("Resources/Sounds/tv.m4a");
+SOUND_LIBRARY.wood_chop.icon = loadImage("Resources/Images/icons/wood_chop.png");
+SOUND_LIBRARY.wood_chop.audio = loadSound("Resources/Sounds/final/wood_chop.m4a");
 
-  SOUND_LIBRARY.wood.icon = loadImage("Resources/Images/icons/wood.png");
-  SOUND_LIBRARY.wood.audio = loadSound("Resources/Sounds/wood.m4a");
+SOUND_LIBRARY.phone_ring.icon = loadImage("Resources/Images/icons/phone_ring.png");
+SOUND_LIBRARY.phone_ring.audio = loadSound("Resources/Sounds/final/phone_ring.m4a");
+
+SOUND_LIBRARY.knife_chop.icon = loadImage("Resources/Images/icons/knife_chop.png");
+SOUND_LIBRARY.knife_chop.audio = loadSound("Resources/Sounds/final/knife_chop.m4a");
+
+SOUND_LIBRARY.fish_catch_underwater.icon = loadImage("Resources/Images/icons/fish_catch_underwater.png");
+SOUND_LIBRARY.fish_catch_underwater.audio = loadSound("Resources/Sounds/final/fish_catch_underwater.m4a");
+
+SOUND_LIBRARY.stew_boil.icon = loadImage("Resources/Images/icons/stew_boil.png");
+SOUND_LIBRARY.stew_boil.audio = loadSound("Resources/Sounds/final/stew_boil.m4a");
+
+SOUND_LIBRARY.dog_bark.icon = loadImage("Resources/Images/icons/dog_bark.png");
+SOUND_LIBRARY.dog_bark.audio = loadSound("Resources/Sounds/final/dog_bark.m4a");
+
+SOUND_LIBRARY.lamp_switch.icon = loadImage("Resources/Images/icons/lamp_switch.png");
+SOUND_LIBRARY.lamp_switch.audio = loadSound("Resources/Sounds/final/lamp_switch.m4a");
+
+SOUND_LIBRARY.helicopter_pass.icon = loadImage("Resources/Images/icons/helicopter_pass.png");
+SOUND_LIBRARY.helicopter_pass.audio = loadSound("Resources/Sounds/final/helicopter_pass.m4a");
+
+SOUND_LIBRARY.sweeping_yard.icon = loadImage("Resources/Images/icons/sweeping_yard.png");
+SOUND_LIBRARY.sweeping_yard.audio = loadSound("Resources/Sounds/final/sweeping_yard.m4a");
+
+SOUND_LIBRARY.water_splash.icon = loadImage("Resources/Images/icons/water_splash.png");
+SOUND_LIBRARY.water_splash.audio = loadSound("Resources/Sounds/final/water_splash.m4a");
+
+SOUND_LIBRARY.grilling_meat.icon = loadImage("Resources/Images/icons/grilling_meat.png");
+SOUND_LIBRARY.grilling_meat.audio = loadSound("Resources/Sounds/final/grilling_meat.m4a");
+
+
 }
 
 function setup() {
@@ -193,6 +210,7 @@ function setup() {
 
   // 얘는 setup 가장 마지막에
   gameManager.changeState(gameState.START);
+  
 }
 
 function draw() {
@@ -238,6 +256,7 @@ function keyPressed(){
 }
 
 function mousePressed(){
+  videos.openingVideo1.play();
   if(gameManager && gameManager.currentState === gameState.EDITING && mixerUI){
     userStartAudio();
     return mixerUI.mousePressed();
