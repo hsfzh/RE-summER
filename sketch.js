@@ -252,7 +252,17 @@ function keyPressed(){
 }
 
 function mousePressed(){
-  videos.openingVideo1.play();
+  if(gameManager.currentState == gameState.START){
+    gameManager.startGame();
+    videos.openingVideo1.play();
+  }
+
+  for(let button of buttons){
+    if(button.ishovering && button.show){
+      button.performAction();
+    }
+  }
+
   if(gameManager && gameManager.currentState === gameState.EDITING && mixerUI){
     userStartAudio();
     return mixerUI.mousePressed();
@@ -265,12 +275,6 @@ function mousePressed(){
   if (gameManager.currentState === gameState.EDITING) {
     mixerUI.mousePressed();
     return false;
-  }
-  
-  for(let button of buttons){
-    if(button.ishovering && button.show){
-      button.performAction();
-    }
   }
 }
 
@@ -307,6 +311,7 @@ function initMapButtons(){
 }
 function initBackgroundImage(){
   for(let i=0; i<totalSceneNum; i++) backgroundImage.push(null);
+  backgroundImage[scenes.EMPTY] = images.tutorial;
   backgroundImage[scenes.INTRO] = images.introBackground;
   backgroundImage[scenes.MAP_SELECT] = images.map;
   backgroundImage[scenes.STREAM] = images.stream;

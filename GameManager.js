@@ -24,6 +24,13 @@ class GameManager{
         this.fadeTime = 0;
         this.fadeImage = null;
         this.fadeExitState;
+        this.gameStart = false;
+    }
+    startGame(){
+        this.gameStart = true;
+    }
+    endGame(){
+        this.gameStart = false;
     }
     changeState(newState){
         this.currentState = newState;
@@ -106,6 +113,7 @@ class GameManager{
         }
     }
     update(time){
+        if(!this.gameStart) return;
         if(this.inputTimer >= 0) this.inputTimer -= time;
         if(this.fadeTimer > 0){
             this.fadeout(time);
@@ -174,7 +182,7 @@ class GameManager{
         fill(255);
         stroke(0);
         pop();
-        showText(this.introText[min(this.textIndex, this.introText.length - 1)], 26, color(0), width*0.48, height*0.86);
+        showText(this.introText[min(this.textIndex, this.introText.length - 1)], 23, color(0), width*0.48, height*0.86);
         if(this.checkInput()){
             this.textIndex += 1;
             if(this.textIndex==this.introText.length){
@@ -211,6 +219,7 @@ class GameManager{
                 this.textIndex += 1;
                 if(call_sound.isPlaying()) call_sound.stop();
                 if(this.textIndex == sceneObjects[scenes.CALLING].length){
+                    if(!postEditSoundFiles["main_bgm_source"].isPlaying()) postEditSoundFiles["main_bgm_source"].loop();
                     for(let object of sceneObjects[scenes.CALLING]) 
                         object.deactivate();
                     videos.callVideo.play();
@@ -251,6 +260,10 @@ class GameManager{
         else {
             this.startFade(this.fadeTime, videos.returnVideo2, gameState.EDITING);
             changeScene(scenes.EDIT_SCENE);
+            postEditSoundFiles["main_bgm_source"].stop();
+            if (soundManager.bgmOptions[1] && soundManager.bgmOptions[1].soundFile) {
+              soundManager.bgmOptions[1].soundFile.stop();
+            }
         }
     }
     updatePlaying(time){

@@ -3776,6 +3776,9 @@ MixerUI.prototype.resetWholeGameToInitialState = function() {
     qrCodeElement = null;
   }
   renderingResultUrl = "";
+  changeScene(scenes.EMPTY);
+  videos.openingVideo1.stop();
+  gameManager.endGame();
 };
 
 MixerUI.prototype.mousePressedFinishScreen = function() {

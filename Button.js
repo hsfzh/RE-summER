@@ -37,8 +37,6 @@ class Button{
 class RestartButton extends Button{
     performAction(){
         mixerUI.resetWholeGameToInitialState();
-        gameManager.changeState(gameState.START);
-        changeScene(scenes.INTRO);
         this.changeShowState(false);
     }
     display(){
