@@ -25,6 +25,7 @@ class GameManager{
         this.fadeImage = null;
         this.fadeExitState;
         this.gameStart = false;
+        this.currentVideo = null;
     }
     startGame(){
         this.gameStart = true;
@@ -287,6 +288,18 @@ class GameManager{
             if(object === player && this.currentState !== gameState.PLAYING) continue;
             object.display();
         }
+
+        if (this.currentVideo) {
+        this.showMemoryVideo(this.currentVideo);
+
+        if (this.currentVideo.time() >= this.currentVideo.duration() - 0.1) {
+            this.currentVideo.stop();
+            this.currentVideo = null;
+            if (this.currentState === gameState.PLAYING) {
+            mapButton.changeShowState(true);
+            }
+        }
+        }
     }
     updateEditing(time){
         if(typeof mixerUI !== "undefined" && mixerUI) mixerUI.update(time);
@@ -303,5 +316,37 @@ class GameManager{
             this.inputTimer = this.inputInterval;
             return true;
         }
+    }
+    playMemoryVideo(video) {
+    if (!video) return;
+
+    this.currentVideo = video;
+    mapButton.changeShowState(false);
+    video.stop();
+    video.time(0);
+    video.play();
+    }
+
+    showMemoryVideo(video) {
+    if (!video) return;
+
+    push();
+
+    fill(0, 160);
+    rect(0, 0, width, height);
+
+    const targetWidth = width * 0.8;
+    const targetHeight = targetWidth * (video.height / video.width);
+
+    imageMode(CENTER);
+    image(
+        video,
+        width / 2,
+        height / 2,
+        targetWidth,
+        targetHeight
+    );
+
+    pop();
     }
 }

@@ -207,9 +207,29 @@ class Player extends GameObject{
         }
         this.inventory.add(sound.soundId);
         console.log(`${sound.soundId} 획득!`);
+        
+        switch(sound.soundId) {
+        case "dog_bark":
+            gameManager.playMemoryVideo(videos.outside);
+        break;
+
+        case "old_tv":
+            gameManager.playMemoryVideo(videos.bedroom);
+            break;
+
+        case "water_splash":
+            gameManager.playMemoryVideo(videos.stream);
+            break;
+
+        case "knife_chop":
+            gameManager.playMemoryVideo(videos.kitchen);
+            break;
+}
+
         sound.deactivate();
         console.log(this.inventory.items);
     }
+
     isJustPressed(keyCodeValue) {
         const isDown = keyIsDown(keyCodeValue);
         const wasDown = this.prevPressed[keyCodeValue] || false;
@@ -218,4 +238,5 @@ class Player extends GameObject{
     hasVisitedAllMaps(){
         return Object.values(this.visitedMap).every(value => value === true);
     }
+
 }

@@ -199,6 +199,10 @@ function setup() {
   videos.callVideo = createVideo("Resources/Videos/afterCall.mp4");
   videos.returnVideo = createVideo("Resources/Videos/return.mp4");
   videos.returnVideo2 = createVideo("Resources/Videos/return2.mp4");
+  videos.outside = createVideo("Resources/Videos/outside_dog.mp4");
+  videos.kitchen = createVideo("Resources/Videos/kitchen_chop.mp4");
+  videos.bedroom = createVideo("Resources/Videos/bedroom_tv.mp4");
+  videos.stream = createVideo("Resources/Videos/stream_kids.mp4")
   for (const video of Object.values(videos))
     video.hide();
 
