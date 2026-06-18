@@ -3952,60 +3952,37 @@ MixerUI.prototype.updateDownloadScreen = function(time){
     }
     callButton.changeShowState(isDebugMode);
   }
-  // 1. 오디오 정지 및 타임라인 싱크 유지
+
   this.updateTransport();
 
-  // 2. 배경화면 연출 (엔딩 씬과 통일감을 주는 어두운 연출)
   background(27, 37, 64);
-  showImage(images.qr_page, 0, width/2, height/2);
+  showImage(images.qr_page, 0, width / 2, height / 2);
 
-  // 3. 상태에 따른 상단 및 내부 텍스트 렌더링
   push();
   noStroke();
   textAlign(CENTER, CENTER);
-  
+
   if (!renderingResultUrl) {
-    // 아직 서버로부터 링크를 받아오지 못한 경우 (업로드 중)
     textStyle(NORMAL);
     textSize(16);
     fill(0);
     text("로딩 중...", width / 2, height * 0.69);
   } else {
-    // 연결 성공 및 URL 획득 완료 상태
-    // QR 코드 주입 및 동적 정렬 제어
     if (!qrCodeElement) {
-      // 1. QR 코드를 주입할 가상 HTML DOM Div 생성
       qrCodeElement = document.createElement("div");
       qrCodeElement.id = "qrcode-container";
-      
-      // 1. 기준점을 브라우저 화면 좌측 상단 꼭짓점(0, 0)으로 완전히 고정
-      qrCodeElement.style.position = "absolute";
 
-      // 2. 원하는 QR 코드 '중심'의 픽셀 좌표를 직접 지정 (예: 가로 640px, 세로 360px)
-      const targetX = width/2; 
-      const targetY = height * 0.7;
-
-      qrCodeElement.style.left = `${targetX}px`;
-      qrCodeElement.style.top = `${targetY}px`;
-
-      //qrCodeElement.style.marginLeft = "-80px";
-      qrCodeElement.style.marginTop = "-54px";
-
-      // 3. 나머지 스타일
+      qrCodeElement.style.position = "fixed";
       qrCodeElement.style.zIndex = "1000";
+      qrCodeElement.style.transform = "translate(-50%, -50%)";
       qrCodeElement.style.padding = "10px";
       qrCodeElement.style.background = "white";
       qrCodeElement.style.borderRadius = "12px";
       qrCodeElement.style.boxShadow = "0px 6px 20px rgba(0,0,0,0.4)";
-      
-      const canvasElt = document.querySelector("canvas");
-      if (canvasElt && canvasElt.parentElement) {
-        canvasElt.parentElement.appendChild(qrCodeElement);
-      } else {
-        document.body.appendChild(qrCodeElement);
-      }
+      qrCodeElement.style.pointerEvents = "none";
 
-      // 3. qrcode.js 인스턴스 빌드 후 주소 연동
+      document.body.appendChild(qrCodeElement);
+
       new QRCode(qrCodeElement, {
         text: renderingResultUrl,
         width: 140,
@@ -4014,5 +3991,22 @@ MixerUI.prototype.updateDownloadScreen = function(time){
         colorLight: "#ffffff"
       });
     }
+
+    const canvasElt = document.querySelector("canvas");
+
+    if (canvasElt) {
+      const rect = canvasElt.getBoundingClientRect();
+
+      const targetCanvasX = width / 2;
+      const targetCanvasY = height * 0.70;
+
+      const screenX = rect.left + (targetCanvasX / width) * rect.width;
+      const screenY = rect.top + (targetCanvasY / height) * rect.height;
+
+      qrCodeElement.style.left = `${screenX}px`;
+      qrCodeElement.style.top = `${screenY}px`;
+    }
   }
+
+  pop();
 };
