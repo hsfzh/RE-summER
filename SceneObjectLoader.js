@@ -70,13 +70,16 @@ function initSceneObjects(){
 
     // 벽 및 장애물
     sceneObjects[scenes.BEDROOM].push(
-        new CollisionObject(width/2,75,946,150)
+        new CollisionObject(width/2,90,946,150)
     );
-    //sceneObjects[scenes.BEDROOM].push(
-    //    new CollisionObject(1120,230,250,500)
-    //);
     sceneObjects[scenes.BEDROOM].push(
-        new CollisionObject(910,500,340,90)
+        new CollisionObject(1050,310,250,50)
+    );
+    sceneObjects[scenes.BEDROOM].push(
+        new CollisionObject(1150,100,100,300)
+    );
+    sceneObjects[scenes.BEDROOM].push(
+        new CollisionObject(870,500,300,90)
     );
     sceneObjects[scenes.BEDROOM].push(
         new CollisionObject(190,660,374,103)
