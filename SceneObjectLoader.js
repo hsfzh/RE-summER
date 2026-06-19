@@ -192,10 +192,10 @@ function initSceneObjects(){
         new GameObject(width/2, height/2, images.call_phone, 1, false, 1)
     )
     sceneObjects[scenes.CALLING].push(
-        new GameObject(width*19/55, height*5/11, images.call_player, 1, false, 1)
+        new GameObject(width*18/55, height*5/11, images.call_player, 0.2, false, 1)
     )
     sceneObjects[scenes.CALLING].push(
-        new GameObject(width*13/20, height*2/5, images.call_mom, 1, false, 1)
+        new GameObject(width*26.5/40, height*2/5, images.call_mom, 0.2, false, 1)
     )
 
     // 모든 오브젝트 추가 후 마지막에
